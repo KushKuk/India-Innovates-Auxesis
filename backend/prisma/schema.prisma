@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Voter {
+  id        String   @id @default(uuid())
+  name      String
+  dob       String   // YYYY-MM-DD
+  age       Int
+  address   String
+  photoUrl  String
+  hasVoted  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  tokens    Token[]
+  auditLogs AuditLog[]
+}
+
+model Token {
+  id               String    @id @default(uuid())
+  code             String    @unique
+  voterId          String
+  voter            Voter     @relation(fields: [voterId], references: [id])
+  verificationMode String    // "digital" | "manual"
+  idType           String
+  idNumber         String
+  votingStatus     String    @default("TOKEN_ACTIVE") // TOKEN_ACTIVE | IN_PROGRESS | VOTED | EXPIRED
+  generatedAt      DateTime  @default(now())
+  expiresAt        DateTime
+  confirmedAt      DateTime?
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  timestamp DateTime @default(now())
+  terminal  String   // "digital" | "manual" | "tvo"
+  action    String
+  status    String   // "info" | "success" | "error" | "warning"
+  details   String?
+  voterId   String?
+  voter     Voter?   @relation(fields: [voterId], references: [id])
+  officerId String?
+}
+
+model Officer {
+  id           String @id @default(uuid())
+  officerId    String @unique
+  name         String
+  passwordHash String
+  role         String @default("officer") // "officer" | "supervisor"
+  boothId      String?
+}
+
+model Booth {
+  id           String  @id @default(uuid())
+  boothCode    String  @unique
+  constituency String
+  isOnline     Boolean @default(true)
+}
