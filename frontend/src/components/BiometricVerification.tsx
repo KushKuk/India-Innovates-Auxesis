@@ -11,7 +11,7 @@ const MAX_FACIAL_ATTEMPTS = 5;
 interface Props {
   onSuccess: () => void;
   onFail: () => void;
-  // onSwitchManual: () => void;
+  onSwitchManual: () => void;
 }
 
 interface BiometricResult {
@@ -39,7 +39,7 @@ function playAlarmBeep() {
   }
 }
 
-export function BiometricVerification({ onSuccess, onFail}: Props) {
+export function BiometricVerification({ onSuccess, onFail, onSwitchManual }: Props) {
   const { t } = useLanguage();
   const [scanning, setScanning] = useState(false);
   const [fingerprintResult, setFingerprintResult] = useState<BiometricResult>({ status: 'idle', completed: false });
@@ -70,7 +70,7 @@ export function BiometricVerification({ onSuccess, onFail}: Props) {
 
     setTimeout(() => {
       setScanning(false);
-      const success = (currentPhase === 'facial') ? 1 : 0;
+      const success = currentPhase === 'fingerprint' || currentPhase === 'facial';
       if (success) {
         setCurrentResult({ status: 'success', completed: true });
 
@@ -83,7 +83,7 @@ export function BiometricVerification({ onSuccess, onFail}: Props) {
         }
       } else {
         setCurrentResult({ status: 'fail', completed: false });
-        
+
         if (currentPhase === 'fingerprint') {
           const newAttempts = fingerprintAttempts + 1;
           setFingerprintAttempts(newAttempts);
@@ -154,7 +154,7 @@ export function BiometricVerification({ onSuccess, onFail}: Props) {
           <div className="flex-1">
             <div className={cn('p-3 rounded-lg border-2 transition-all',
               fingerprintResult.completed ? 'border-success bg-success/10' :
-              currentPhase === 'fingerprint' ? 'border-primary bg-primary/10' : 'border-border')}>
+                currentPhase === 'fingerprint' ? 'border-primary bg-primary/10' : 'border-border')}>
               <div className="flex items-center gap-2 mb-1">
                 <Fingerprint className="w-4 h-4" />
                 <span className="text-sm font-semibold">{t('fingerprint')}</span>
@@ -168,7 +168,7 @@ export function BiometricVerification({ onSuccess, onFail}: Props) {
           <div className="flex-1">
             <div className={cn('p-3 rounded-lg border-2 transition-all',
               facialResult.completed ? 'border-success bg-success/10' :
-              currentPhase === 'facial' ? 'border-primary bg-primary/10' : 'border-border')}>
+                currentPhase === 'facial' ? 'border-primary bg-primary/10' : 'border-border')}>
               <div className="flex items-center gap-2 mb-1">
                 <ScanFace className="w-4 h-4" />
                 <span className="text-sm font-semibold">{t('facialScan')}</span>
