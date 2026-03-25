@@ -22,7 +22,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { searchVoters, markVoterAsVoted, Voter } from '@/lib/voterDatabase';
+import { searchVoters, markVoterAsVoted } from '@/lib/voterDatabase';
+import { Voter } from '@/types/verification';
 import { searchVotersFromBackend, markVoterAsVotedInBackend } from '@/lib/api';
 import { auditLogger } from '@/lib/auditLogger';
 
@@ -114,6 +115,11 @@ export function ManualVerification({ onComplete, onCancel, onAudit }: Props) {
   // Step 1: Search Voter
   const handleSearchVoter = async () => {
     setSearchError('');
+    setAlreadyVotedCheck(false);
+    setSupervisorApproved(false);
+    setToken(null);
+    setSelectedVoter(null);
+
     if (!searchName.trim()) {
       setSearchError('Please enter voter name');
       return;
@@ -233,6 +239,12 @@ export function ManualVerification({ onComplete, onCancel, onAudit }: Props) {
 
   const handleGoBack = () => {
     if (currentStep > 1) {
+      if (currentStep === 2) {
+        setAlreadyVotedCheck(false);
+        setSupervisorApproved(false);
+        setToken(null);
+        setSelectedVoter(null);
+      }
       setCurrentStep(currentStep - 1);
     } else {
       onCancel();
@@ -713,7 +725,13 @@ export function ManualVerification({ onComplete, onCancel, onAudit }: Props) {
           <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm border border-destructive/20">
             This voter has already cast their vote and cannot vote again.
           </div>
-          <Button onClick={() => setCurrentStep(1)} variant="outline" className="w-full">
+          <Button onClick={() => { 
+            setAlreadyVotedCheck(false);
+            setSupervisorApproved(false);
+            setToken(null);
+            setSelectedVoter(null);
+            setCurrentStep(1); 
+          }} variant="outline" className="w-full">
             Search Another Voter
           </Button>
         </CardContent>

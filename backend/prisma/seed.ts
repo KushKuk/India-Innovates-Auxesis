@@ -16,6 +16,11 @@ async function main() {
     { id: 'VOT006', name: 'Deepika Verma', dob: '1995-02-14', age: 31, address: '987 Connaught Place, Delhi', photoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=deepika', hasVoted: false },
     { id: 'VOT007', name: 'Arjun Kumar', dob: '1984-08-05', age: 40, address: '111 Park Street, Kolkata', photoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=arjun', hasVoted: false },
     { id: 'VOT008', name: 'Nirupama Pillai', dob: '1993-06-25', age: 33, address: '222 M.G. Road, Bangalore', photoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=nirupama', hasVoted: false },
+    { id: 'VOT009', name: 'Ramesh Singh', dob: '1982-12-11', age: 43, address: '555 Lajpat Nagar, Delhi', photoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ramesh', hasVoted: false },
+    { id: 'VOT010', name: 'Alia Bhatt', dob: '1996-04-20', age: 29, address: '777 Juhu Scheme, Mumbai', photoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alia', hasVoted: false },
+    { id: 'VOT011', name: 'Karan Johar', dob: '1975-01-08', age: 51, address: '888 Bandra West, Mumbai', photoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=karan', hasVoted: false },
+    { id: 'VOT012', name: 'Meera Rao', dob: '1998-10-15', age: 27, address: '999 T. Nagar, Chennai', photoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=meera', hasVoted: false },
+    { id: 'VOT013', name: 'Vikas Sharma', dob: '1989-03-03', age: 36, address: '444 Civil Lines, Jaipur', photoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=vikas', hasVoted: false },
   ];
 
   for (const voter of voters) {

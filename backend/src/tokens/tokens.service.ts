@@ -20,7 +20,6 @@ export class TokensService {
 
   /**
    * Create a new token for a verified voter
-   * No timer starts yet - token is just created and waiting for TVO verification
    */
   async generate(data: {
     voterId: string;
@@ -28,6 +27,7 @@ export class TokensService {
     idType: string;
     idNumber: string;
   }) {
+    const expiryMinutes = this.config.get<number>('TOKEN_EXPIRY_MINUTES', 3);
     const prefix = data.verificationMode === 'manual' ? 'M' : '';
     const code = this.generateCode(prefix);
 
@@ -39,7 +39,7 @@ export class TokensService {
         idType: data.idType,
         idNumber: data.idNumber,
         votingStatus: 'TOKEN_ACTIVE',
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours - no timer yet
+        expiresAt: new Date(Date.now() + expiryMinutes * 60 * 1000),
       },
       include: { voter: true },
     });
@@ -174,8 +174,7 @@ export class TokensService {
 
   /**
    * TVO approves voting - marks token and voter as VOTED
-   * 3-MINUTE TIMER STARTS HERE - voter must actually vote within 3 minutes
-   * If 3 minutes expire without confirmation, hasVoted reverts to false
+   * This prevents duplicate voting
    */
   async approveVoting(tokenId: string) {
     const token = await this.prisma.token.findUnique({
@@ -188,21 +187,17 @@ export class TokensService {
       throw new Error(`Token must be IN_PROGRESS to approve, current: ${token.votingStatus}`);
     }
 
-    // START 3-MINUTE TIMER HERE
-    const votingTimeoutMinutes = 3;
-
-    // Update token status with 3-minute expiry
+    // Update token status
     const updatedToken = await this.prisma.token.update({
       where: { id: tokenId },
       data: {
         votingStatus: 'VOTED',
         confirmedAt: new Date(),
-        expiresAt: new Date(Date.now() + votingTimeoutMinutes * 60 * 1000), // 3-min timer starts now
       },
       include: { voter: true },
     });
 
-    // Mark voter as having voted (but can be reverted if timer expires)
+    // Update voter status
     await this.prisma.voter.update({
       where: { id: token.voterId },
       data: { votingStatus: 'VOTED', hasVoted: true },
@@ -212,14 +207,14 @@ export class TokensService {
   }
 
   /**
-   * Check for expired IN_PROGRESS and VOTED tokens and revert them
+   * Check for expired IN_PROGRESS tokens and revert them
    * Run this periodically (e.g., every minute) to handle timeouts
    */
   async checkAndExpireInProgressTokens() {
     const now = new Date();
 
     // Find all IN_PROGRESS tokens that have expired
-    const expiredInProgressTokens = await this.prisma.token.findMany({
+    const expiredTokens = await this.prisma.token.findMany({
       where: {
         votingStatus: 'IN_PROGRESS',
         expiresAt: { lte: now },
@@ -227,33 +222,22 @@ export class TokensService {
       include: { voter: true },
     });
 
-    // Find all VOTED tokens that have expired (3-min timer exceeded)
-    const expiredVotedTokens = await this.prisma.token.findMany({
-      where: {
-        votingStatus: 'VOTED',
-        expiresAt: { lte: now },
-      },
-      include: { voter: true },
-    });
-
-    const allExpiredTokens = [...expiredInProgressTokens, ...expiredVotedTokens];
-
     // Revert each expired token
-    for (const token of allExpiredTokens) {
+    for (const token of expiredTokens) {
       // Mark token as expired
       await this.prisma.token.update({
         where: { id: token.id },
         data: { votingStatus: 'EXPIRED' },
       });
 
-      // Revert voter status to PENDING and hasVoted to false
+      // Revert voter status to PENDING
       await this.prisma.voter.update({
         where: { id: token.voterId },
         data: { votingStatus: 'PENDING', hasVoted: false },
       });
     }
 
-    return allExpiredTokens.length;
+    return expiredTokens.length;
   }
 
   /**
