@@ -35,7 +35,29 @@ export class VotersService {
     });
   }
 
+  /**
+   * Get voter voting status
+   * Returns PENDING, IN_PROGRESS, VOTED, or EXPIRED
+   */
+  async getVotingStatus(id: string) {
+    const voter = await this.prisma.voter.findUnique({ where: { id } });
+    
+    if (!voter) {
+      return { status: 'NOT_FOUND', canVote: false };
+    }
+
+    const canVote = voter.votingStatus === 'PENDING' && !voter.hasVoted;
+
+    return {
+      status: voter.votingStatus,
+      hasVoted: voter.hasVoted,
+      canVote,
+      voter,
+    };
+  }
+
   async findAll() {
     return this.prisma.voter.findMany();
   }
+}
 }

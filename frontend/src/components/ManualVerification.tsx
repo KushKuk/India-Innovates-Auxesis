@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/select';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { searchVoters, markVoterAsVoted, Voter } from '@/lib/voterDatabase';
+import { searchVotersFromBackend, markVoterAsVotedInBackend } from '@/lib/api';
 import { auditLogger } from '@/lib/auditLogger';
 
 interface Props {
@@ -111,7 +112,7 @@ export function ManualVerification({ onComplete, onCancel, onAudit }: Props) {
   }, []);
 
   // Step 1: Search Voter
-  const handleSearchVoter = () => {
+  const handleSearchVoter = async () => {
     setSearchError('');
     if (!searchName.trim()) {
       setSearchError('Please enter voter name');
@@ -123,33 +124,31 @@ export function ManualVerification({ onComplete, onCancel, onAudit }: Props) {
       return;
     }
 
-    // Special test case: allow proceeding with "Rajesh Kumar Singh" and "0000-00-00"
-    if (searchName.trim().toLowerCase() === 'rajesh kumar singh' && searchDob === '0000-00-00') {
-      const testVoter: Voter = {
-        id: 'TEST001',
-        name: 'Rajesh Kumar Singh',
-        dob: '1985-05-15',
-        age: 39,
-        address: '123 Gandhi Nagar, New Delhi',
-        photoUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=rajesh',
-        hasVoted: false,
-      };
-      audit('Voter search performed', 'success', 'Test case - Found 1 match');
-      setSearchResults([testVoter]);
-      setCurrentStep(2); // Advance to voter selection
-      return;
-    }
+    try {
+      setProcessing(true);
+      console.log('🔍 Starting search...');
+      const results = await searchVotersFromBackend(searchName, searchDob, useAge);
+      console.log('📊 Search results:', results);
 
-    const results = searchVoters(searchName, searchDob, useAge);
-
-    if (results.length === 0) {
-      audit('Voter search performed', 'error', `No match found for ${searchName}`);
-      setSearchError('Voter not found in electoral roll – Not eligible to vote');
-      setSearchResults([]);
-    } else {
-      audit('Voter search performed', 'success', `Found ${results.length} match(es)`);
-      setSearchResults(results);
-      setCurrentStep(2); // Advance to voter selection
+      if (!results || results.length === 0) {
+        console.log('❌ No results found');
+        audit('Voter search performed', 'error', `No match found for ${searchName}`);
+        setSearchError('Voter not found in electoral roll – Not eligible to vote');
+        setSearchResults([]);
+      } else {
+        console.log(`✅ Found ${results.length} voter(s), advancing to step 2`);
+        audit('Voter search performed', 'success', `Found ${results.length} match(es)`);
+        setSearchResults(results as Voter[]);
+        setSearchError(''); // Explicitly clear error before advancing
+        setCurrentStep(2); // Advance to voter selection
+      }
+    } catch (error) {
+      console.error('❌ Search error:', error);
+      audit('Voter search performed', 'error', `Error searching: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setSearchError('Error searching voters. Please check your connection and try again.');
+      console.error('Search error:', error);
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -198,7 +197,7 @@ export function ManualVerification({ onComplete, onCancel, onAudit }: Props) {
     }
   };
 
-  const handleSupervisorApproval = () => {
+  const handleSupervisorApproval = async () => {
     if (!selectedVoter) return;
 
     // Step 8: Check if already voted
@@ -212,11 +211,11 @@ export function ManualVerification({ onComplete, onCancel, onAudit }: Props) {
     setSupervisorApproved(true);
     setProcessing(true);
 
-    // Step 9: Generate token
-    setTimeout(() => {
+    // Step 9: Generate token and mark voter as voted
+    try {
+      await markVoterAsVotedInBackend(selectedVoter.id);
       const newToken = 'M-' + Math.random().toString(36).substring(2, 8).toUpperCase();
       setToken(newToken);
-      markVoterAsVoted(selectedVoter.id);
       audit('Token generated', 'success', newToken);
       audit('Voter marked as voted', 'info');
       setProcessing(false);
@@ -225,7 +224,11 @@ export function ManualVerification({ onComplete, onCancel, onAudit }: Props) {
       setTimeout(() => {
         onComplete(newToken);
       }, 1500);
-    }, 1500);
+    } catch (error) {
+      audit('Token generation failed', 'error', error instanceof Error ? error.message : 'Unknown error');
+      console.error('Error marking voter as voted:', error);
+      setProcessing(false);
+    }
   };
 
   const handleGoBack = () => {

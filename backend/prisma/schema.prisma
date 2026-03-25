@@ -8,14 +8,15 @@ datasource db {
 }
 
 model Voter {
-  id        String   @id @default(uuid())
-  name      String
-  dob       String   // YYYY-MM-DD
-  age       Int
-  address   String
-  photoUrl  String
-  hasVoted  Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id           String   @id @default(uuid())
+  name         String
+  dob          String   // YYYY-MM-DD
+  age          Int
+  address      String
+  photoUrl     String
+  votingStatus String   @default("PENDING") // PENDING | IN_PROGRESS | VOTED | EXPIRED
+  hasVoted     Boolean  @default(false)
+  createdAt    DateTime @default(now())
 
   tokens    Token[]
   auditLogs AuditLog[]
@@ -32,7 +33,8 @@ model Token {
   votingStatus     String    @default("TOKEN_ACTIVE") // TOKEN_ACTIVE | IN_PROGRESS | VOTED | EXPIRED
   generatedAt      DateTime  @default(now())
   expiresAt        DateTime
-  confirmedAt      DateTime?
+  verifiedAt       DateTime? // When TVO verified the token (set to IN_PROGRESS)
+  confirmedAt      DateTime? // When TVO approved voting (set to VOTED)
 }
 
 model AuditLog {

@@ -26,6 +26,12 @@ export class VotersController {
     return this.votersService.markAsVoted(id);
   }
 
+  @Get(':id/voting-status')
+  @ApiOperation({ summary: 'Get voter voting status - checks if already voted or in progress' })
+  async getVotingStatus(@Param('id') id: string) {
+    return this.votersService.getVotingStatus(id);
+  }
+
   @Get()
   @ApiOperation({ summary: 'List all voters' })
   async findAll() {
