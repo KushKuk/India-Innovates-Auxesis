@@ -12,21 +12,30 @@ export function LanguageSelection({ onSelect }: Props) {
   const { lang, setLang } = useLanguage();
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md text-center space-y-8">
+    <div className="relative min-h-screen bg-background flex items-center justify-center p-4 overflow-hidden">
+      {/* Background Logo Overlay */}
+      <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+        <img 
+          src="/OneVote.png" 
+          alt="" 
+          className="w-[120%] h-[120%] object-contain opacity-[0.08] scale-110"
+        />
+      </div>
+
+      <div className="relative z-10 w-full max-w-md text-center space-y-8">
         <div className="space-y-4">
           <div className="w-20 h-20 bg-primary rounded-2xl flex items-center justify-center mx-auto">
             <ECILogo size={64} /> 
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Choose Your Language</h1>
+            <h1 className="text-2xl font-bold text-foreground">OneVote</h1>
             <p className="text-lg text-muted-foreground mt-1">कृपया अपनी भाषा चुनें</p>
           </div>
           <p className="text-sm text-muted-foreground">
-            Election Commission of India — Polling Booth System
+            OneVote — Secured Polling Booth System
           </p>
           <p className="text-sm text-muted-foreground">
-            भारत निर्वाचन आयोग — मतदान केंद्र प्रणाली
+            वनवोट — सुरक्षित मतदान केंद्र प्रणाली
           </p>
         </div>
 

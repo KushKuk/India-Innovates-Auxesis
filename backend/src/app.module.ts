@@ -8,6 +8,7 @@ import { TokensModule } from './tokens/tokens.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { BoothModule } from './booth/booth.module';
+import { FingerprintModule } from './fingerprint/fingerprint.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -21,6 +22,7 @@ import { AppController } from './app.controller';
     AuditModule,
     AuthModule,
     BoothModule,
+    FingerprintModule,
   ],
   controllers: [AppController],
 })

@@ -29,6 +29,7 @@ export class VerificationController {
   @Post('face-match')
   @ApiOperation({ summary: 'Run facial matching verification' })
   async faceMatch(@Body() dto: FaceMatchDto) {
+    console.log(`[TRACE] Controller: face-match received for ${dto.voterId}`);
     return this.verificationService.faceMatch(dto.voterId, dto.liveImage);
   }
 }

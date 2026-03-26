@@ -1,5 +1,6 @@
-import { Shield, Sun, Moon, Wifi, WifiOff } from 'lucide-react';
+import { Sun, Moon, Wifi, WifiOff } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { ECILogo } from './ECILogo';
 
 interface Props {
   darkMode: boolean;
@@ -15,8 +16,8 @@ export function SharedHeader({ darkMode, toggleDark, isOnline, toggleOnline }: P
     <header className="border-b border-border bg-card sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
-            <Shield className="w-5 h-5 text-primary-foreground" />
+          <div className="flex items-center justify-center">
+            <ECILogo size={36} />
           </div>
           <div>
             <h1 className="text-base font-bold text-foreground leading-tight">{t('headerTitle')}</h1>

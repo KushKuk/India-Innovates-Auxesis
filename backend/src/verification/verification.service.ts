@@ -99,28 +99,37 @@ export class VerificationService {
    * Face match verification flow (Phase 1: Mockable / Phase 4: Internal Test)
    */
   async faceMatch(voterId: string, liveImage: string) {
-    const voter = await this.prisma.voter.findUnique({ where: { id: voterId } });
-    if (!voter) throw new NotFoundException('Voter not found in electoral roll');
+    try {
+      const voter = await this.prisma.voter.findUnique({ where: { id: voterId } });
+      if (!voter) throw new NotFoundException('Voter not found in electoral roll');
 
-    if (voter.faceVerificationEnabled === false) {
-      throw new BadRequestException('Face verification is disabled for this voter record');
+      if (voter.faceVerificationEnabled === false) {
+        throw new BadRequestException('Face verification is disabled for this voter record');
+      }
+
+      if (!voter.photoUrl) {
+        throw new BadRequestException('Voter record is missing a reference photo');
+      }
+
+      console.log(`[DEBUG] Calling faceMatchProvider for voter: ${voterId}`);
+      const result = await this.faceMatchProvider.matchFace(liveImage, voterId);
+
+      // Audit log the attempt
+      await this.auditService.log({
+        terminal: 'digital',
+        action: 'Facial verification attempt',
+        status: result.matchStatus === 'MATCH' ? 'success' : 'failure',
+        details: `Status: ${result.matchStatus}, Confidence: ${result.confidenceScore}, Reason: ${result.reason}, Provider: ${result.providerId}`,
+        voterId,
+      });
+
+      return result;
+    } catch (error: any) {
+      const fs = require('fs');
+      const errorMsg = `[${new Date().toISOString()}] FaceMatch Error for ${voterId}:\n${error.message}\n${error.stack}\n\n`;
+      fs.appendFileSync('debug_error.txt', errorMsg);
+      console.error('[ERROR] VerificationService.faceMatch failed:', error);
+      throw error;
     }
-
-    if (!voter.photoUrl) {
-      throw new BadRequestException('Voter record is missing a reference photo');
-    }
-
-    const result = await this.faceMatchProvider.matchFace(liveImage, voterId);
-
-    // Audit log the attempt
-    await this.auditService.log({
-      terminal: 'digital',
-      action: 'Facial verification attempt',
-      status: result.matchStatus === 'MATCH' ? 'success' : 'failure',
-      details: `Status: ${result.matchStatus}, Confidence: ${result.confidenceScore}, Reason: ${result.reason}, Provider: ${result.providerId}`,
-      voterId,
-    });
-
-    return result;
   }
 }

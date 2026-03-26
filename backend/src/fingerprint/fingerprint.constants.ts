@@ -1,0 +1,32 @@
+/**
+ * Fingerprint verification constants.
+ * All failure reasons are standardized for audit-friendly logging.
+ */
+
+export enum FingerLabel {
+  LEFT_INDEX = 'LEFT_INDEX',
+  LEFT_THUMB = 'LEFT_THUMB',
+  LEFT_MIDDLE = 'LEFT_MIDDLE',
+  RIGHT_INDEX = 'RIGHT_INDEX',
+  RIGHT_THUMB = 'RIGHT_THUMB',
+  RIGHT_MIDDLE = 'RIGHT_MIDDLE',
+}
+
+export enum FailureReason {
+  IMAGE_TOO_BLURRY = 'IMAGE_TOO_BLURRY',
+  LOW_CONTRAST = 'LOW_CONTRAST',
+  IMAGE_TOO_SMALL = 'IMAGE_TOO_SMALL',
+  FINGER_REGION_NOT_FOUND = 'FINGER_REGION_NOT_FOUND',
+  TEMPLATE_EXTRACTION_FAILED = 'TEMPLATE_EXTRACTION_FAILED',
+  MATCH_SCORE_BELOW_THRESHOLD = 'MATCH_SCORE_BELOW_THRESHOLD',
+  NO_ENROLLED_TEMPLATES = 'NO_ENROLLED_TEMPLATES',
+  INTERNAL_ERROR = 'INTERNAL_ERROR',
+}
+
+export enum VerificationStatus {
+  SUCCESS = 'SUCCESS',
+  FAILED = 'FAILED',
+}
+
+export const TEMPLATE_VERSION = 'sourcefis-v1';
+export const EXTRACTOR_USED = 'sourcefis';

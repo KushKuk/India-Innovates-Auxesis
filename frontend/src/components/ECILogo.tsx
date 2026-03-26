@@ -12,9 +12,8 @@ interface ECILogoProps extends React.ImgHTMLAttributes<HTMLImageElement> {
 export function ECILogo({ size = 80, className, ...props }: ECILogoProps) {
   return (
     <img
-      // Ensure you have downloaded the true SVG and placed it in your /public folder
-      src="/Election_Commission_of_India_Logo.svg.png" 
-      alt="Election Commission of India Logo"
+      src="/OneVote.png" 
+      alt="OneVote Logo"
       width={size}
       height={size}
       className={cn("object-contain", className)}

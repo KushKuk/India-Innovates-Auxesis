@@ -20,8 +20,9 @@ model Voter {
   hasVoted     Boolean  @default(false)
   createdAt    DateTime @default(now())
 
-  tokens    Token[]
-  auditLogs AuditLog[]
+  tokens                Token[]
+  auditLogs             AuditLog[]
+  fingerprintTemplates  FingerprintTemplate[]
 }
 
 model Token {
@@ -65,4 +66,39 @@ model Booth {
   boothCode    String  @unique
   constituency String
   isOnline     Boolean @default(true)
+}
+
+// ─── Fingerprint Verification ──────────────────────────────────────────────
+
+model FingerprintTemplate {
+  id              String   @id @default(uuid())
+  voterId         String
+  voter           Voter    @relation(fields: [voterId], references: [id])
+  fingerLabel     String   // LEFT_INDEX | RIGHT_INDEX | LEFT_THUMB | RIGHT_THUMB
+  templateType    String   // extractor name e.g. "sourcefis"
+  templateData    Bytes    // AES-GCM-256 encrypted template
+  iv              String   // per-record encryption IV (hex)
+  qualityScore    Float
+  imageRef        String?  // optional audit image path
+  templateVersion String   @default("sourcefis-v1")
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+}
+
+model FingerprintLog {
+  id                String   @id @default(uuid())
+  sessionId         String
+  voterId           String
+  fingerLabel       String
+  status            String   // SUCCESS | FAILED
+  qualityScore      Float?
+  matchScore        Float?
+  threshold         Float
+  failureReason     String?
+  extractorUsed     String
+  matchedTemplateId String?
+  inputFormat       String?  // jpg | png
+  templateVersion   String?
+  deviceId          String?
+  timestamp         DateTime @default(now())
 }
