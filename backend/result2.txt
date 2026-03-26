@@ -1,0 +1,140 @@
+﻿--- Setting up Local Face Match Internal Test ---
+16:55:21.038 Human: error loading model: file:///C:/Users/Lenovo/.gemini/antigravity/scratch/India-Innovates-Auxesis/backend/node_modules/@vladmandic/human-models/models/blazeface.json [TypeError: fetch failed] {
+  [cause]: Error: not implemented... yet...
+      at makeNetworkError (node:internal/deps/undici/undici:10797:35)
+      at schemeFetch (node:internal/deps/undici/undici:12343:34)
+      at mainFetch (node:internal/deps/undici/undici:12191:30)
+      at fetching (node:internal/deps/undici/undici:12160:7)
+      at fetch (node:internal/deps/undici/undici:12031:20)
+      at fetch (node:internal/deps/undici/undici:16555:10)
+      at fetch (node:internal/bootstrap/web/exposed-window-or-worker:83:12)
+      at fs (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:99:25077)
+      at HTTPRequest.fetchFunc [as fetch] (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:99:25817)
+      at HTTPRequest.<anonymous> (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\tfjs-core\src\io\http.ts:139:43)
+}
+16:55:21.064 Human: error loading model: file:///C:/Users/Lenovo/.gemini/antigravity/scratch/India-Innovates-Auxesis/backend/node_modules/@vladmandic/human-models/models/faceres.json [TypeError: fetch failed] {
+  [cause]: Error: not implemented... yet...
+      at makeNetworkError (node:internal/deps/undici/undici:10797:35)
+      at schemeFetch (node:internal/deps/undici/undici:12343:34)
+      at mainFetch (node:internal/deps/undici/undici:12191:30)
+      at fetching (node:internal/deps/undici/undici:12160:7)
+      at fetch (node:internal/deps/undici/undici:12031:20)
+      at fetch (node:internal/deps/undici/undici:16555:10)
+      at fetch (node:internal/bootstrap/web/exposed-window-or-worker:83:12)
+      at fs (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:99:25077)
+      at HTTPRequest.fetchFunc [as fetch] (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:99:25817)
+      at HTTPRequest.<anonymous> (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\tfjs-core\src\io\http.ts:139:43)
+}
+16:55:21.065 Human: error loading model: file:///C:/Users/Lenovo/.gemini/antigravity/scratch/India-Innovates-Auxesis/backend/node_modules/@vladmandic/human-models/models/emotion.json [TypeError: fetch failed] {
+  [cause]: Error: not implemented... yet...
+      at makeNetworkError (node:internal/deps/undici/undici:10797:35)
+      at schemeFetch (node:internal/deps/undici/undici:12343:34)
+      at mainFetch (node:internal/deps/undici/undici:12191:30)
+      at fetching (node:internal/deps/undici/undici:12160:7)
+      at fetch (node:internal/deps/undici/undici:12031:20)
+      at fetch (node:internal/deps/undici/undici:16555:10)
+      at fetch (node:internal/bootstrap/web/exposed-window-or-worker:83:12)
+      at fs (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:99:25077)
+      at HTTPRequest.fetchFunc [as fetch] (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:99:25817)
+      at HTTPRequest.<anonymous> (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\tfjs-core\src\io\http.ts:139:43)
+}
+16:55:21.065 Human: error loading model: file:///C:/Users/Lenovo/.gemini/antigravity/scratch/India-Innovates-Auxesis/backend/node_modules/@vladmandic/human-models/models/iris.json [TypeError: fetch failed] {
+  [cause]: Error: not implemented... yet...
+      at makeNetworkError (node:internal/deps/undici/undici:10797:35)
+      at schemeFetch (node:internal/deps/undici/undici:12343:34)
+      at mainFetch (node:internal/deps/undici/undici:12191:30)
+      at fetching (node:internal/deps/undici/undici:12160:7)
+      at fetch (node:internal/deps/undici/undici:12031:20)
+      at fetch (node:internal/deps/undici/undici:16555:10)
+      at fetch (node:internal/bootstrap/web/exposed-window-or-worker:83:12)
+      at fs (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:99:25077)
+      at HTTPRequest.fetchFunc [as fetch] (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:99:25817)
+      at HTTPRequest.<anonymous> (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\tfjs-core\src\io\http.ts:139:43)
+}
+16:55:21.065 Human: error loading model: file:///C:/Users/Lenovo/.gemini/antigravity/scratch/India-Innovates-Auxesis/backend/node_modules/@vladmandic/human-models/models/facemesh.json [TypeError: fetch failed] {
+  [cause]: Error: not implemented... yet...
+      at makeNetworkError (node:internal/deps/undici/undici:10797:35)
+      at schemeFetch (node:internal/deps/undici/undici:12343:34)
+      at mainFetch (node:internal/deps/undici/undici:12191:30)
+      at fetching (node:internal/deps/undici/undici:12160:7)
+      at fetch (node:internal/deps/undici/undici:12031:20)
+      at fetch (node:internal/deps/undici/undici:16555:10)
+      at fetch (node:internal/bootstrap/web/exposed-window-or-worker:83:12)
+      at fs (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:99:25077)
+      at HTTPRequest.fetchFunc [as fetch] (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:99:25817)
+      at HTTPRequest.<anonymous> (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\tfjs-core\src\io\http.ts:139:43)
+}
+node.exe : TypeError: 
+Cannot read properties 
+of undefined (reading 
+'inputs')
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (TypeError: Ca   
+ nn...ading 'inputs    
+'):String) [], Rem    
+oteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+    at GraphModel.get (
+C:\Users\Lenovo\.gemini
+\antigravity\scratch\In
+dia-Innovates-Auxesis\b
+ackend\tfjs-converter\s
+rc\executor\graph_model
+.ts:72:26)
+    at Z3 (C:\Users\Len
+ovo\.gemini\antigravity
+\scratch\India-Innovate
+s-Auxesis\backend\node_
+modules\@vladmandic\hum
+an\dist\human.node.js:1
+21:29040)
+    at processTicksAndR
+ejections (node:interna
+l/process/task_queues:1
+04:5)
+C:\Users\Lenovo\.gemini
+\antigravity\scratch\In
+dia-Innovates-Auxesis\b
+ackend\tfjs-converter\s
+rc\executor\graph_model
+.ts:72
+    return 
+this.executor.inputs;
+                       
+  ^
+TypeError: Cannot read 
+properties of 
+undefined (reading 
+'inputs')
+    at GraphModel.get (
+C:\Users\Lenovo\.gemini
+\antigravity\scratch\In
+dia-Innovates-Auxesis\b
+ackend\tfjs-converter\s
+rc\executor\graph_model
+.ts:72:26)
+    at Z3 (C:\Users\Len
+ovo\.gemini\antigravity
+\scratch\India-Innovate
+s-Auxesis\backend\node_
+modules\@vladmandic\hum
+an\dist\human.node.js:1
+21:29040)
+    at processTicksAndR
+ejections (node:interna
+l/process/task_queues:1
+04:5)

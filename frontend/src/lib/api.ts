@@ -237,3 +237,36 @@ export async function getTokenStatus(tokenId: string): Promise<TokenStatus> {
     throw error;
   }
 }
+/**
+ * Run facial matching verification
+ */
+export async function faceMatch(voterId: string, liveImage: string) {
+  try {
+    const url = `${API_BASE_URL}/verification/face-match`;
+    console.log(`📸 Initiating faceMatch for voter: ${voterId}`);
+    console.log(`🌐 POST URL: ${url}`);
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ voterId, liveImage }),
+    });
+
+    console.log('📡 Face match response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Face match error:', errorText);
+      throw new Error(`Facial matching failed: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('✅ Face match result:', data);
+    return data;
+  } catch (error) {
+    console.error('Error in faceMatch:', error);
+    throw error;
+  }
+}

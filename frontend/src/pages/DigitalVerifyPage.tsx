@@ -33,11 +33,12 @@ export default function DigitalVerifyPage() {
     setStages(prev => ({ ...prev, [stage]: status }));
   }, []);
 
-  const handleIdSuccess = useCallback(() => {
+  const handleIdSuccess = useCallback((voterId: string) => {
     updateStage('identity', 'success');
     updateStage('biometric', 'active');
     setCurrentStage(1);
-    addAuditEntry({ terminal: 'digital', action: 'ID verified', status: 'success', details: 'Identity document verified' });
+    setCurrentVoterId(voterId);
+    addAuditEntry({ terminal: 'digital', action: 'ID verified', status: 'success', details: `Identity confirmed (Voter: ${voterId})` });
   }, [updateStage, addAuditEntry]);
 
   const handleIdFail = useCallback(() => {
@@ -52,11 +53,11 @@ export default function DigitalVerifyPage() {
     setTokenGenerated(true);
     setCurrentStage(2);
 
-    const voterId = 'VTR' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    const voterId = currentVoterId || 'VOT001'; 
     setCurrentVoterId(voterId);
     
     addVoter({
-      name: 'Digital Voter',
+      name: voterId === 'VOT001' ? 'Kushaagra Goel' : voterId === 'VOT002' ? 'Pranav Shukla' : 'Digital Voter',
       voterId,
       idType: 'aadhaar',
       idNumber: '****',
@@ -142,7 +143,7 @@ export default function DigitalVerifyPage() {
                   <AadhaarVerification onSuccess={handleIdSuccess} onFail={handleIdFail} onSwitchManual={() => {}} />
                 )}
                 {currentStage === 1 && (
-                  <BiometricVerification onSuccess={handleBiometricSuccess} onFail={handleBiometricFail} onSwitchManual={() => {}} />
+                  <BiometricVerification voterId={currentVoterId} onSuccess={handleBiometricSuccess} onFail={handleBiometricFail} onSwitchManual={() => {}} />
                 )}
               </>
             )}

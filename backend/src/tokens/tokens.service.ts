@@ -81,7 +81,7 @@ export class TokensService {
       return this.prisma.token.findFirst({
         where: {
           idType,
-          idNumber: { equals: idNumber, mode: 'insensitive' },
+          idNumber: { equals: idNumber },
           votingStatus: 'TOKEN_ACTIVE',
           expiresAt: { gt: new Date() },
         },

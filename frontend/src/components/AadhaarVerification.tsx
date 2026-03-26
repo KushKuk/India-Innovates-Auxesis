@@ -13,7 +13,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 const MAX_ID_ATTEMPTS = 3;
 
 interface Props {
-  onSuccess: () => void;
+  onSuccess: (voterId: string) => void;
   onFail: () => void;
   onSwitchManual: () => void;
 }
@@ -84,26 +84,16 @@ export function AadhaarVerification({ onSuccess, onFail, onSwitchManual }: Props
     setIdNumber('');
 
     setTimeout(() => {
-      const success = Math.random() > 0.3;
-
-      const scannedId = success
-        ? 'ID' + Math.random().toString(36).substring(2, 9).toUpperCase()
-        : '0' + Math.random().toString(36).substring(2, 8).toUpperCase();
-
-      setIdNumber(scannedId);
+      // INTERNAL TEST OVERRIDE: Always succeed as VOT001 (Kushaagra Goel)
+      setIdNumber('VOT001 (KUSHAAGRA GOEL)');
       setScanning(false);
-
-      if (scannedId.startsWith('0')) {
-        handleFailure();
-      } else {
-        handleSuccess();
-      }
-    }, 2000);
+      handleSuccess('VOT001');
+    }, 1500);
   };
 
-  const handleSuccess = () => {
+  const handleSuccess = (voterId: string) => {
     setResult('success');
-    setTimeout(onSuccess, 800);
+    setTimeout(() => onSuccess(voterId), 800);
   };
 
   const handleFailure = () => {
@@ -171,14 +161,51 @@ export function AadhaarVerification({ onSuccess, onFail, onSwitchManual }: Props
 
         {/* Scanner UI */}
         {!scanning && result === 'idle' && (
-          <div className="p-5 border rounded-lg bg-muted/40 text-center space-y-3">
-            <Scan className="w-10 h-10 mx-auto text-primary" />
-            <p className="text-sm font-medium">
-              Please scan your ID using the hardware scanner
-            </p>
-            <Button onClick={startHardwareScan}>
-              Initiate Scan
-            </Button>
+          <div className="space-y-4">
+            <div className="p-5 border rounded-lg bg-muted/40 text-center space-y-3">
+              <Scan className="w-10 h-10 mx-auto text-primary" />
+              <p className="text-sm font-medium">
+                Please scan your ID using the hardware scanner
+              </p>
+              <Button onClick={startHardwareScan}>
+                Initiate Scan
+              </Button>
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground italic">
+                  Internal Test Mode
+                </span>
+              </div>
+            </div>
+
+            <div className="p-4 border border-dashed rounded-lg bg-primary/5 space-y-3">
+              <p className="text-xs font-semibold text-primary uppercase text-center">Manual ID Entry (Testing Only)</p>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Enter Voter ID (e.g. VOT001)" 
+                  className="flex-1 px-3 py-2 text-sm bg-background border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  value={idNumber}
+                  onChange={(e) => setIdNumber(e.target.value.toUpperCase())}
+                />
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  disabled={!idNumber.trim()}
+                  onClick={() => handleSuccess(idNumber.trim())}
+                >
+                  Confirm
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground text-center">
+                Use this to switch between test accounts without code changes.
+              </p>
+            </div>
           </div>
         )}
 

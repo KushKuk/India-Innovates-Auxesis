@@ -41,3 +41,29 @@ export class ManualVerifyDto {
   @IsString()
   supervisorNotes?: string;
 }
+export class FaceMatchDto {
+  @ApiProperty({ example: 'uuid-of-voter' })
+  @IsString()
+  voterId: string;
+
+  @ApiProperty({
+    example: 'data:image/jpeg;base64,...',
+    description: 'Base64 encoded live capture image',
+  })
+  @IsString()
+  liveImage: string;
+}
+
+export class FaceMatchResponse {
+  @ApiProperty({ example: 'MATCH', enum: ['MATCH', 'NO_MATCH', 'ERROR'] })
+  matchStatus: 'MATCH' | 'NO_MATCH' | 'ERROR';
+
+  @ApiProperty({ example: 0.98, description: 'Confidence score (0 to 1)' })
+  confidenceScore: number;
+
+  @ApiPropertyOptional({ example: 'Face detected and matched successfully' })
+  reason?: string;
+
+  @ApiPropertyOptional({ example: 'mock-provider-v1' })
+  providerId?: string;
+}

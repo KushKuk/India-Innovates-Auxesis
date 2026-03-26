@@ -43,6 +43,7 @@ export interface VerificationState {
     biometric: StageStatus;
     voterId: StageStatus;
   };
+  voterId: string | null;
   token: string | null;
   auditLog: AuditEntry[];
   isOnline: boolean;

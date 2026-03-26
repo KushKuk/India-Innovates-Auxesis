@@ -10,7 +10,7 @@ export class VotersService {
 
     const voters = await this.prisma.voter.findMany({
       where: {
-        name: { contains: searchName, mode: 'insensitive' },
+        name: { contains: searchName },
       },
     });
 
@@ -59,5 +59,4 @@ export class VotersService {
   async findAll() {
     return this.prisma.voter.findMany();
   }
-}
 }

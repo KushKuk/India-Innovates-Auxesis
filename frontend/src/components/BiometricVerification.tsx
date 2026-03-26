@@ -1,14 +1,17 @@
 import { useState, useCallback, useRef } from 'react';
-import { Fingerprint, ScanFace, AlertTriangle } from 'lucide-react';
+import { Fingerprint, ScanFace, AlertTriangle, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { faceMatch } from '@/lib/api';
+import { toast } from 'sonner';
 
 const MAX_FINGERPRINT_ATTEMPTS = 5;
 const MAX_FACIAL_ATTEMPTS = 5;
 
 interface Props {
+  voterId: string | null;
   onSuccess: () => void;
   onFail: () => void;
   onSwitchManual: () => void;
@@ -39,7 +42,7 @@ function playAlarmBeep() {
   }
 }
 
-export function BiometricVerification({ onSuccess, onFail, onSwitchManual }: Props) {
+export function BiometricVerification({ voterId, onSuccess, onFail, onSwitchManual }: Props) {
   const { t } = useLanguage();
   const [scanning, setScanning] = useState(false);
   const [fingerprintResult, setFingerprintResult] = useState<BiometricResult>({ status: 'idle', completed: false });
@@ -49,6 +52,9 @@ export function BiometricVerification({ onSuccess, onFail, onSwitchManual }: Pro
   const [facialAttempts, setFacialAttempts] = useState(0);
   const [locked, setLocked] = useState(false);
   const alarmPlayedRef = useRef(false);
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const maxAttempts = currentPhase === 'fingerprint' ? MAX_FINGERPRINT_ATTEMPTS : MAX_FACIAL_ATTEMPTS;
   const currentAttempts = currentPhase === 'fingerprint' ? fingerprintAttempts : facialAttempts;
@@ -61,45 +67,95 @@ export function BiometricVerification({ onSuccess, onFail, onSwitchManual }: Pro
     }
   }, []);
 
-  const handleScan = () => {
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error('Error accessing camera:', err);
+      toast.error('Could not access camera. Please check permissions.');
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach((track) => track.stop());
+      videoRef.current.srcObject = null;
+    }
+  };
+
+  const captureImage = (): string | null => {
+    if (!videoRef.current || !canvasRef.current) return null;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // Switched to PNG for lossless quality to improve AI descriptor extraction
+    return canvas.toDataURL('image/png');
+  };
+
+  const handleScan = async () => {
     if (locked) return;
     setScanning(true);
-    const setCurrentResult = currentPhase === 'fingerprint' ? setFingerprintResult : setFacialResult;
 
-    setCurrentResult({ status: 'idle', completed: false });
+    if (currentPhase === 'fingerprint') {
+      setFingerprintResult({ status: 'idle', completed: false });
+      // Simulate fingerprint scan
+      setTimeout(() => {
+        setScanning(false);
+        setFingerprintResult({ status: 'success', completed: true });
+        setTimeout(() => setCurrentPhase('facial'), 800);
+      }, 2000);
+    } else {
+      setFacialResult({ status: 'idle', completed: false });
+      
+      // Ensure camera is started
+      if (!videoRef.current?.srcObject) {
+        await startCamera();
+        // Give it a moment to warm up
+        await new Promise(r => setTimeout(r, 500));
+      }
+      
+      // Removed artificial 1.5s delay to make scan feel more immediate
+      
+      const liveImage = captureImage();
+      if (!liveImage) {
+        setScanning(false);
+        setFacialResult({ status: 'fail', completed: false });
+        toast.error('Failed to capture image');
+        return;
+      }
 
-    setTimeout(() => {
-      setScanning(false);
-      const success = currentPhase === 'fingerprint' || currentPhase === 'facial';
-      if (success) {
-        setCurrentResult({ status: 'success', completed: true });
+      try {
+        const result = await faceMatch(voterId || 'test-voter', liveImage);
+        setScanning(false);
+        stopCamera();
 
-        if (currentPhase === 'fingerprint') {
-          setTimeout(() => {
-            setCurrentPhase('facial');
-          }, 800);
-        } else {
+        if (result.matchStatus === 'MATCH') {
+          setFacialResult({ status: 'success', completed: true });
           setTimeout(onSuccess, 800);
-        }
-      } else {
-        setCurrentResult({ status: 'fail', completed: false });
-
-        if (currentPhase === 'fingerprint') {
-          const newAttempts = fingerprintAttempts + 1;
-          setFingerprintAttempts(newAttempts);
-          if (newAttempts >= MAX_FINGERPRINT_ATTEMPTS) {
-            triggerLockout();
-          }
         } else {
+          setFacialResult({ status: 'fail', completed: false });
           const newAttempts = facialAttempts + 1;
           setFacialAttempts(newAttempts);
           if (newAttempts >= MAX_FACIAL_ATTEMPTS) {
             triggerLockout();
           }
+          onFail();
         }
-        onFail();
+      } catch (err) {
+        setScanning(false);
+        stopCamera();
+        setFacialResult({ status: 'fail', completed: false });
+        toast.error('Server error during face match');
       }
-    }, 3000);
+    }
   };
 
   const isAllBiometricsComplete = fingerprintResult.completed && facialResult.completed;
@@ -191,26 +247,45 @@ export function BiometricVerification({ onSuccess, onFail, onSwitchManual }: Pro
           </div>
         )}
 
-        <div className="relative w-32 h-32 mx-auto">
-          <div className={cn('w-full h-full rounded-full border-4 flex items-center justify-center transition-all duration-300',
-            scanning && 'border-primary', currentResult.status === 'success' && 'border-success bg-success/10',
-            currentResult.status === 'fail' && 'border-destructive bg-destructive/10', currentResult.status === 'idle' && !scanning && 'border-border')}>
-            {currentPhase === 'fingerprint' ? (
-              <Fingerprint className={cn('w-16 h-16 transition-colors', scanning ? 'text-primary' : 'text-muted-foreground/40')} />
-            ) : (
-              <ScanFace className={cn('w-16 h-16 transition-colors', scanning ? 'text-primary' : 'text-muted-foreground/40')} />
-            )}
-          </div>
-          {scanning && (
-            <>
-              <div className="absolute inset-0 rounded-full border-4 border-primary/50 pulse-ring" />
-              <div className="absolute inset-0 overflow-hidden rounded-full"><div className="w-full h-1 bg-primary/60 scan-line" /></div>
-            </>
+        {/* Scan Area */}
+        <div className="relative w-full max-w-sm mx-auto aspect-square rounded-2xl overflow-hidden border-2 border-dashed border-border flex items-center justify-center bg-muted/20">
+          {currentPhase === 'fingerprint' ? (
+            <div className={cn('w-32 h-32 rounded-full border-4 flex items-center justify-center transition-all duration-300',
+              scanning ? 'border-primary animate-pulse' : 'border-border')}>
+              <Fingerprint className={cn('w-16 h-16', scanning ? 'text-primary' : 'text-muted-foreground/40')} />
+            </div>
+          ) : (
+            <div className="relative w-full h-full">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className={cn('w-full h-full object-cover grayscale transition-all', scanning && 'grayscale-0')}
+              />
+              <canvas ref={canvasRef} className="hidden" />
+              
+              {/* Overlay for face detection */}
+              <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                <div className={cn('w-48 h-64 border-2 rounded-[40%] transition-all duration-500', 
+                  scanning ? 'border-primary scale-110' : 'border-white/30 animate-pulse')}>
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-6">
+                    <div className="bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-muted-foreground border border-border">
+                      {scanning ? 'Detecting Face' : 'Position Face Here'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {scanning && (
+                <div className="absolute inset-x-0 top-0 h-1 bg-primary/60 scan-line z-10" />
+              )}
+            </div>
           )}
         </div>
 
         <p className="text-center text-sm text-muted-foreground">
-          {scanning ? t('scanningHoldStill') : currentResult.status === 'idle' ? `${t('pressScanBegin')} ${currentPhase === 'fingerprint' ? t('fingerprint') : t('facialScan')} ${t('capture')}` : ''}
+          {scanning ? (currentPhase === 'fingerprint' ? t('scanningHoldStill') : 'Analyzing face features...') : currentResult.status === 'idle' ? `${t('pressScanBegin')} ${currentPhase === 'fingerprint' ? t('fingerprint') : t('facialScan')} ${t('capture')}` : ''}
         </p>
 
         {currentResult.status === 'fail' && (
@@ -224,6 +299,11 @@ export function BiometricVerification({ onSuccess, onFail, onSwitchManual }: Pro
         )}
 
         <div className="flex gap-2 pt-2">
+          {currentPhase === 'facial' && !scanning && currentResult.status === 'idle' && (
+             <Button variant="outline" className="flex-1 gap-2" onClick={startCamera}>
+                <Camera className="w-4 h-4" /> Start Camera
+             </Button>
+          )}
           <Button variant="booth" className="flex-1" onClick={handleScan} disabled={scanning || isAllBiometricsComplete}>
             {scanning ? (
               <span className="flex items-center gap-2">

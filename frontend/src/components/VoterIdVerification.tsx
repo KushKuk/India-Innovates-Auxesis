@@ -24,11 +24,10 @@ export function VoterIdVerification({ onSuccess, onFail, onSwitchManual }: Props
     // Simulate scanning the voter ID
     setTimeout(() => {
       setVerifying(false);
-      // Generate a random voter ID on successful scan
-      const scannedId = 'VID' + Math.random().toString(36).substring(2, 9).toUpperCase();
-      setVoterId(scannedId);
+      // INTERNAL TEST OVERRIDE: Always succeed as VOT001 (Kushaagra Goel)
+      setVoterId('VOT001 (KUSHAAGRA GOEL)');
       setIsScanned(true);
-    }, 2000);
+    }, 1500);
   };
 
   const handleVerify = () => {
@@ -97,16 +96,39 @@ export function VoterIdVerification({ onSuccess, onFail, onSwitchManual }: Props
         )}
 
         {!verifying && !isScanned && (
-          <Button
-            variant="booth"
-            className="w-full gap-2"
-            onClick={handleScanVoterId}
-            disabled={verifying || result === 'success' || isScanned}
-          >
-            <span className="flex items-center gap-2">
-              <Scan className="w-4 h-4" /> Scan Voter ID
-            </span>
-          </Button>
+          <div className="space-y-4">
+            <Button
+              variant="booth"
+              className="w-full gap-2"
+              onClick={handleScanVoterId}
+              disabled={verifying || result === 'success' || isScanned}
+            >
+              <span className="flex items-center gap-2">
+                <Scan className="w-4 h-4" /> Scan Voter ID
+              </span>
+            </Button>
+
+            <div className="p-4 border border-dashed rounded-lg bg-primary/5 space-y-3">
+               <p className="text-xs font-semibold text-primary uppercase text-center">Manual ID Entry (Testing Only)</p>
+               <div className="flex gap-2">
+                 <input 
+                   type="text" 
+                   placeholder="Enter Voter ID (VOT001)" 
+                   className="flex-1 px-3 py-2 text-sm bg-background border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
+                   value={voterId}
+                   onChange={(e) => setVoterId(e.target.value.toUpperCase())}
+                 />
+                 <Button 
+                   variant="outline" 
+                   size="sm"
+                   disabled={!voterId.trim()}
+                   onClick={() => setIsScanned(true)}
+                 >
+                   Confirm
+                 </Button>
+               </div>
+            </div>
+          </div>
         )}
 
         {!verifying && isScanned && (

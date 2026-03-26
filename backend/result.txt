@@ -1,0 +1,79 @@
+﻿--- Setting up Local Face Match Internal Test ---
+16:51:16.163 Human: error: backend wasm not found in registry
+16:51:16.164 Human: error: cannot set backend: tensorflow Error: Backend name 'tensorflow' not found in registry
+    at Engine.<anonymous> (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\tfjs-core\src\engine.ts:276:13)
+    at step (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\tslib\tslib.es6.js:102:23)
+    at Object.next (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\tslib\tslib.es6.js:83:53)
+    at C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\tslib\tslib.es6.js:76:71
+    at new Promise (<anonymous>)
+    at __awaiter (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\tslib\tslib.es6.js:72:12)
+    at Engine.setBackend (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@tensorflow\tfjs-core\dist\tf-core.node.js:4365:16)
+    at Object.setBackend (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\tfjs-core\src\globals.ts:292:17)
+    at N2 (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:99:33229)
+    at w1.load (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:840:5728)
+16:51:16.188 Human: error: backend check failed
+16:51:16.203 Human: error loading model: C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human-models\models/blazeface.json [TypeError: fetch failed] {
+  [cause]: Error: unknown scheme
+      at makeNetworkError (node:internal/deps/undici/undici:10797:35)
+      at schemeFetch (node:internal/deps/undici/undici:12350:34)
+      at mainFetch (node:internal/deps/undici/undici:12191:30)
+      at fetching (node:internal/deps/undici/undici:12160:7)
+      at fetch (node:internal/deps/undici/undici:12031:20)
+      at fetch (node:internal/deps/undici/undici:16555:10)
+      at fetch (node:internal/bootstrap/web/exposed-window-or-worker:83:12)
+      at fs (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:99:25077)
+      at HTTPRequest.fetchFunc [as fetch] (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:99:25817)
+      at HTTPRequest.<anonymous> (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\tfjs-core\src\io\http.ts:139:43)
+}
+16:51:16.204 Human: error loading model: C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human-models\models/faceres.json [TypeError: fetch failed] {
+  [cause]: Error: unknown scheme
+      at makeNetworkError (node:internal/deps/undici/undici:10797:35)
+      at schemeFetch (node:internal/deps/undici/undici:12350:34)
+      at mainFetch (node:internal/deps/undici/undici:12191:30)
+      at fetching (node:internal/deps/undici/undici:12160:7)
+      at fetch (node:internal/deps/undici/undici:12031:20)
+      at fetch (node:internal/deps/undici/undici:16555:10)
+      at fetch (node:internal/bootstrap/web/exposed-window-or-worker:83:12)
+      at fs (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:99:25077)
+      at HTTPRequest.fetchFunc [as fetch] (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:99:25817)
+      at HTTPRequest.<anonymous> (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\tfjs-core\src\io\http.ts:139:43)
+}
+16:51:16.205 Human: error loading model: C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human-models\models/emotion.json [TypeError: fetch failed] {
+  [cause]: Error: unknown scheme
+      at makeNetworkError (node:internal/deps/undici/undici:10797:35)
+      at schemeFetch (node:internal/deps/undici/undici:12350:34)
+      at mainFetch (node:internal/deps/undici/undici:12191:30)
+      at fetching (node:internal/deps/undici/undici:12160:7)
+      at fetch (node:internal/deps/undici/undici:12031:20)
+      at fetch (node:internal/deps/undici/undici:16555:10)
+      at fetch (node:internal/bootstrap/web/exposed-window-or-worker:83:12)
+      at fs (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:99:25077)
+      at HTTPRequest.fetchFunc [as fetch] (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:99:25817)
+      at HTTPRequest.<anonymous> (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\tfjs-core\src\io\http.ts:139:43)
+}
+16:51:16.205 Human: error loading model: C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human-models\models/iris.json [TypeError: fetch failed] {
+  [cause]: Error: unknown scheme
+      at makeNetworkError (node:internal/deps/undici/undici:10797:35)
+      at schemeFetch (node:internal/deps/undici/undici:12350:34)
+      at mainFetch (node:internal/deps/undici/undici:12191:30)
+      at fetching (node:internal/deps/undici/undici:12160:7)
+      at fetch (node:internal/deps/undici/undici:12031:20)
+      at fetch (node:internal/deps/undici/undici:16555:10)
+      at fetch (node:internal/bootstrap/web/exposed-window-or-worker:83:12)
+      at fs (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:99:25077)
+      at HTTPRequest.fetchFunc [as fetch] (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:99:25817)
+      at HTTPRequest.<anonymous> (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\tfjs-core\src\io\http.ts:139:43)
+}
+16:51:16.205 Human: error loading model: C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human-models\models/facemesh.json [TypeError: fetch failed] {
+  [cause]: Error: unknown scheme
+      at makeNetworkError (node:internal/deps/undici/undici:10797:35)
+      at schemeFetch (node:internal/deps/undici/undici:12350:34)
+      at mainFetch (node:internal/deps/undici/undici:12191:30)
+      at fetching (node:internal/deps/undici/undici:12160:7)
+      at fetch (node:internal/deps/undici/undici:12031:20)
+      at fetch (node:internal/deps/undici/undici:16555:10)
+      at fetch (node:internal/bootstrap/web/exposed-window-or-worker:83:12)
+      at fs (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:99:25077)
+      at HTTPRequest.fetchFunc [as fetch] (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:99:25817)
+      at HTTPRequest.<anonymous> (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\tfjs-core\src\io\http.ts:139:43)
+}

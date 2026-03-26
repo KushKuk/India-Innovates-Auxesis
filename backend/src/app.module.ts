@@ -8,6 +8,7 @@ import { TokensModule } from './tokens/tokens.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { BoothModule } from './booth/booth.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -21,5 +22,6 @@ import { BoothModule } from './booth/booth.module';
     AuthModule,
     BoothModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule {}

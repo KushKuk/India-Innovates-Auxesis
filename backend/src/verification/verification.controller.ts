@@ -1,7 +1,7 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { VerificationService } from './verification.service';
-import { DigitalVerifyDto, ManualVerifyDto } from './dto/verification.dto';
+import { DigitalVerifyDto, FaceMatchDto, ManualVerifyDto } from './dto/verification.dto';
 
 @ApiTags('Verification')
 @Controller('verification')
@@ -24,5 +24,11 @@ export class VerificationController {
       dto.reason,
       dto.officerId,
     );
+  }
+
+  @Post('face-match')
+  @ApiOperation({ summary: 'Run facial matching verification' })
+  async faceMatch(@Body() dto: FaceMatchDto) {
+    return this.verificationService.faceMatch(dto.voterId, dto.liveImage);
   }
 }

@@ -18,6 +18,7 @@ const initialState: VerificationState = {
   mode: 'primary',
   currentStage: 0,
   stages: { aadhaar: 'active', biometric: 'pending', voterId: 'pending' },
+  voterId: null,
   token: null,
   auditLog: [],
   isOnline: true,
@@ -39,11 +40,11 @@ export function VerificationDashboard() {
     setState(prev => ({ ...prev, stages: { ...prev.stages, [stage]: status } }));
   }, []);
 
-  const handleAadhaarSuccess = useCallback(() => {
+  const handleAadhaarSuccess = useCallback((voterId: string) => {
     updateStage('aadhaar', 'success');
     updateStage('biometric', 'active');
-    setState(prev => ({ ...prev, currentStage: 1 }));
-    addLog('Aadhaar verified', 'success', 'Identity confirmed via UIDAI');
+    setState(prev => ({ ...prev, currentStage: 1, voterId }));
+    addLog('Aadhaar verified', 'success', `Identity confirmed via UIDAI (Voter: ${voterId})`);
   }, [updateStage, addLog]);
 
   const handleAadhaarFail = useCallback(() => {
@@ -216,6 +217,7 @@ export function VerificationDashboard() {
                 )}
                 {state.currentStage === 1 && (
                   <BiometricVerification
+                    voterId={state.voterId}
                     onSuccess={handleBiometricSuccess}
                     onFail={handleBiometricFail}
                     onSwitchManual={switchToManual}
