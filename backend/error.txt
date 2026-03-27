@@ -1,0 +1,32 @@
+node:internal/modules/cjs/loader:1386
+  throw err;
+  ^
+
+Error: Cannot find module '@tensorflow/tfjs-node'
+Require stack:
+- C:\Users\prana\repos\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js
+- C:\Users\prana\repos\India-Innovates-Auxesis\backend\dist\src\verification\providers\local-face-match.provider.js
+- C:\Users\prana\repos\India-Innovates-Auxesis\backend\dist\src\verification\verification.module.js
+- C:\Users\prana\repos\India-Innovates-Auxesis\backend\dist\src\app.module.js
+- C:\Users\prana\repos\India-Innovates-Auxesis\backend\dist\src\main.js
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)
+    at Function._load (node:internal/modules/cjs/loader:1192:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.require (node:internal/modules/cjs/loader:1463:12)
+    at require (node:internal/modules/helpers:147:16)
+    at C:\Users\prana\repos\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:7:1670
+    at C:\Users\prana\repos\India-Innovates-Auxesis\backend\node_modules\@vladmandic\human\dist\human.node.js:7:344 {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\prana\\repos\\India-Innovates-Auxesis\\backend\\node_modules\\@vladmandic\\human\\dist\\human.node.js',
+    'C:\\Users\\prana\\repos\\India-Innovates-Auxesis\\backend\\dist\\src\\verification\\providers\\local-face-match.provider.js',
+    'C:\\Users\\prana\\repos\\India-Innovates-Auxesis\\backend\\dist\\src\\verification\\verification.module.js',
+    'C:\\Users\\prana\\repos\\India-Innovates-Auxesis\\backend\\dist\\src\\app.module.js',
+    'C:\\Users\\prana\\repos\\India-Innovates-Auxesis\\backend\\dist\\src\\main.js'
+  ]
+}
+
+Node.js v22.19.0

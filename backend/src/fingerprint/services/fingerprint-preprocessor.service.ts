@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { FailureReason } from '../fingerprint.constants';
+import * as Jimp from 'jimp';
 
 export interface PreprocessResult {
   success: true;
@@ -40,19 +41,18 @@ export class FingerprintPreprocessorService {
   ): Promise<PreprocessOutput> {
     const inputFormat = mimeType.includes('png') ? 'png' : 'jpg';
 
-    // Use require() for jimp so CJS imports always work in NestJS
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { Jimp } = require('jimp');
     let jimpImage: any;
 
     try {
-      jimpImage = await Jimp.read(imageBuffer);
-    } catch {
+      console.log('Jimp object type:', typeof Jimp);
+      console.log('Jimp keys:', Object.keys(Jimp || {}));
+      jimpImage = await (Jimp as any).read(imageBuffer);
+    } catch (err: any) {
       return {
         success: false,
         failureReason: FailureReason.INTERNAL_ERROR,
         qualityScore: 0,
-        message: 'Failed to decode image buffer.',
+        message: `Failed to decode image buffer: ${err.message}`,
       };
     }
 
@@ -86,8 +86,8 @@ export class FingerprintPreprocessorService {
     }
 
     // ── Check 3: Low contrast ─────────────────────────────────────────────
-    const min = Math.min(...pixels);
-    const max = Math.max(...pixels);
+    const min = pixels.reduce((a, b) => Math.min(a, b), 255);
+    const max = pixels.reduce((a, b) => Math.max(a, b), 0);
     const contrastRange = max - min;
     if (contrastRange < MIN_CONTRAST_RANGE) {
       return {
@@ -130,7 +130,7 @@ export class FingerprintPreprocessorService {
 
     // ── Light denoise ─────────────────────────────────────────────────────
     jimpImage.blur(1);
-    const processedBuffer: Buffer = await jimpImage.getBuffer('image/png');
+    const processedBuffer: Buffer = await jimpImage.getBufferAsync('image/png');
 
     this.logger.log(
       `Preprocessing OK — quality: ${qualityScore}, size: ${width}x${height}, blur: ${laplacianVar.toFixed(1)}`,

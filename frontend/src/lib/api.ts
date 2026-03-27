@@ -15,6 +15,24 @@ export interface ApiVoter {
 }
 
 /**
+ * Normalize voter object - ensure photoUrl is correctly formatted
+ */
+function normalizeVoter(voter: any): ApiVoter {
+  if (!voter) return voter;
+  
+  let photoUrl = voter.photoUrl;
+  // If photoUrl exists and doesn't start with / or http, prepend /
+  if (photoUrl && !photoUrl.startsWith('/') && !photoUrl.startsWith('http')) {
+    photoUrl = `/${photoUrl}`;
+  }
+  
+  return {
+    ...voter,
+    photoUrl: photoUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${voter.id}`,
+  };
+}
+
+/**
  * Search voters from the backend
  */
 export async function searchVotersFromBackend(
@@ -51,10 +69,10 @@ export async function searchVotersFromBackend(
     console.log('✅ Found voters (raw):', voters);
     
     // Ensure all voters have required fields with fallbacks
-    const processedVoters = voters.map((voter: any) => ({
-      ...voter,
-      photoUrl: voter.photoUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${voter.id}`,
-    }));
+    const processedVoters = Array.isArray(voters) ? voters.map(normalizeVoter) : [];
+    
+    console.log('✅ Found voters (processed):', processedVoters);
+    return processedVoters;
     
     console.log('✅ Found voters (processed):', processedVoters);
     return processedVoters;
@@ -81,7 +99,7 @@ export async function getVoterById(id: string): Promise<ApiVoter> {
     }
 
     const voter = await response.json();
-    return voter;
+    return normalizeVoter(voter);
   } catch (error) {
     console.error('Error fetching voter:', error);
     throw error;
@@ -105,7 +123,7 @@ export async function markVoterAsVotedInBackend(id: string): Promise<ApiVoter> {
     }
 
     const voter = await response.json();
-    return voter;
+    return normalizeVoter(voter);
   } catch (error) {
     console.error('Error marking voter as voted:', error);
     throw error;
@@ -129,7 +147,7 @@ export async function getAllVoters(): Promise<ApiVoter[]> {
     }
 
     const voters = await response.json();
-    return voters;
+    return Array.isArray(voters) ? voters.map(normalizeVoter) : [];
   } catch (error) {
     console.error('Error fetching all voters:', error);
     throw error;
@@ -231,7 +249,11 @@ export async function getTokenStatus(tokenId: string): Promise<TokenStatus> {
       throw new Error(`API error: ${response.statusText}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    if (data && data.voter) {
+      data.voter = normalizeVoter(data.voter);
+    }
+    return data;
   } catch (error) {
     console.error('Error fetching token status:', error);
     throw error;

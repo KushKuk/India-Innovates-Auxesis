@@ -187,23 +187,15 @@ export class LocalFaceMatchProvider extends FaceMatchProvider implements OnModul
     // Human expects an RGB tensor tensor3d. 
     // We'll normalize to Float32 [0, 1] to ensure the AI gets the cleanest possible signal
     const numPixels = width * height;
-    const rgbData = new Float32Array(numPixels * 3);
+    const rgbData = new Int32Array(numPixels * 3);
     
     for (let i = 0; i < numPixels; i++) {
-        // Apply a slight contrast boost during pixel conversion to exaggerate features
-        // We use Math.max/Math.min to ensure we stay in [0, 255] range before normalizing
-        const r = data[i * 4 + 0];
-        const g = data[i * 4 + 1];
-        const b = data[i * 4 + 2];
-        
-        // Final normalization to [0.0, 1.0]
-        rgbData[i * 3 + 0] = r / 255.0; 
-        rgbData[i * 3 + 1] = g / 255.0;
-        rgbData[i * 3 + 2] = b / 255.0;
+        rgbData[i * 3 + 0] = data[i * 4 + 0]; 
+        rgbData[i * 3 + 1] = data[i * 4 + 1];
+        rgbData[i * 3 + 2] = data[i * 4 + 2];
     }
     
-    // Create Float32 tensor which forces Human to use high-precision internal math
-    return this.human.tf.tensor3d(rgbData, [height, width, 3], 'float32');
+    return this.human.tf.tensor3d(rgbData, [height, width, 3], 'int32');
   }
 }
 

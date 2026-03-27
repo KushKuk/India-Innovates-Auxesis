@@ -10,7 +10,7 @@ async function main() {
   const voters = [
     { 
       id: 'VOT001', 
-      name: 'Rajesh Kumar Singh', 
+      name: 'Ramesh Kumar Singh', 
       dob: '1985-05-15', 
       age: 39, 
       address: '123 Gandhi Nagar, New Delhi', 
@@ -31,35 +31,35 @@ async function main() {
       hasVoted: false 
     },
     { 
-      id: 'VOT003', 
-      name: 'Priya Sharma', 
+      id: 'VOT011', 
+      name: 'Rishit Sahay', 
       dob: '1990-03-22', 
       age: 34, 
       address: '456 Ashoka Road, Mumbai', 
-      photoUrl: 's3://india-election-biometrics/voters/VOT002_ref.jpg', 
-      photoVerifiedAt: new Date('2024-01-12T14:30:00Z'),
+      photoUrl: 'uploads/voters/rishit-sahay.png', 
+      photoVerifiedAt: new Date(),
       faceVerificationEnabled: true,
       hasVoted: false 
     },
     { 
-      id: 'VOT004', 
-      name: 'Amit Patel', 
+      id: 'VOT012', 
+      name: 'Saarthak Garg', 
       dob: '1988-07-10', 
       age: 36, 
       address: '789 Raj Path, Bangalore', 
-      photoUrl: 's3://india-election-biometrics/voters/VOT003_ref.jpg', 
-      photoVerifiedAt: new Date('2023-12-05T09:15:00Z'),
+      photoUrl: 'uploads/voters/saarthak-garg.png', 
+      photoVerifiedAt: new Date(),
       faceVerificationEnabled: true,
-      hasVoted: true 
+      hasVoted: false 
     },
     { 
-      id: 'VOT005', 
-      name: 'Sneha Gupta', 
+      id: 'VOT013', 
+      name: 'Sahil', 
       dob: '1992-11-30', 
       age: 32, 
       address: '321 Indira Nagar, Pune', 
-      photoUrl: 's3://india-election-biometrics/voters/VOT004_ref.jpg', 
-      photoVerifiedAt: new Date('2024-02-01T11:20:00Z'),
+      photoUrl: 'uploads/voters/sahil.png', 
+      photoVerifiedAt: new Date(),
       faceVerificationEnabled: true,
       hasVoted: false 
     },

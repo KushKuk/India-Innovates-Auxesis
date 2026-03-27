@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { FailureReason, EXTRACTOR_USED, TEMPLATE_VERSION } from '../fingerprint.constants';
+import * as Jimp from 'jimp';
 
 // ─── Minutia types ────────────────────────────────────────────────────────────
 export interface Minutia {
@@ -48,8 +49,7 @@ export class FingerprintExtractorService {
    */
   async extract(processedBuffer: Buffer): Promise<ExtractionOutput> {
     try {
-      const { Jimp } = require('jimp');
-      const img = await Jimp.read(processedBuffer);
+      const img = await (Jimp as any).read(processedBuffer);
       img.grayscale();
 
       const { width, height } = img.bitmap;

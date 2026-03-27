@@ -55,6 +55,12 @@ export class FingerprintController {
     @Body() dto: EnrollFingerprintDto,
   ) {
     if (!file) throw new BadRequestException('Fingerprint image file is required.');
+    console.log('Received file for enrollment:', {
+      hasBuffer: !!file.buffer,
+      bufferLength: file.buffer?.length,
+      mimeType: file.mimetype,
+      originalname: file.originalname,
+    });
     return this.fingerprintService.enroll(file.buffer, file.mimetype, dto);
   }
 
