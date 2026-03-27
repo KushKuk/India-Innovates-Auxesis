@@ -42,8 +42,8 @@ async function main() {
       hasVoted: false 
     },
     { 
-      id: 'VOT012', 
-      name: 'Saarthak Garg', 
+      id: 'JDH7280183', 
+      name: 'Sarthak Garg', 
       dob: '1988-07-10', 
       age: 36, 
       address: '789 Raj Path, Bangalore', 
@@ -57,8 +57,21 @@ async function main() {
       name: 'Sahil', 
       dob: '1992-11-30', 
       age: 32, 
+      gender: 'Male',
       address: '321 Indira Nagar, Pune', 
       photoUrl: 'uploads/voters/sahil.png', 
+      photoVerifiedAt: new Date(),
+      faceVerificationEnabled: true,
+      hasVoted: false 
+    },
+    { 
+      id: 'VOT014', 
+      name: 'Satyam Tiwari', 
+      dob: '2005-01-17', 
+      age: 21, 
+      gender: 'Male',
+      address: 'C/O: Saurabh Tiwari, House No.142, Street 5 , Block C, Sector 3, PO: Rohini DIST : North West, Delhi-110085', 
+      photoUrl: 'uploads/voters/satyam-tiwari.png', 
       photoVerifiedAt: new Date(),
       faceVerificationEnabled: true,
       hasVoted: false 
@@ -73,6 +86,36 @@ async function main() {
     });
   }
   console.log(`  ✅ ${voters.length} voters seeded`);
+
+  // Seed Document Types
+  const aadharType = await prisma.documentType.upsert({
+    where: { name: 'Aadhaar Card' },
+    update: {},
+    create: { name: 'Aadhaar Card' },
+  });
+  
+  const panType = await prisma.documentType.upsert({
+    where: { name: 'PAN Card' },
+    update: {},
+    create: { name: 'PAN Card' },
+  });
+  console.log('  ✅ Document Types seeded');
+
+  // Seed Voter Documents for Satyam
+  await prisma.voterDocument.upsert({
+    where: { 
+      voterId_documentTypeId: { voterId: 'VOT014', documentTypeId: aadharType.id }
+    },
+    update: { documentNumber: '801271369901', nameOnDocument: 'Satyam Tiwari' },
+    create: { 
+      voterId: 'VOT014',
+      documentTypeId: aadharType.id,
+      documentNumber: '801271369901',
+      nameOnDocument: 'Satyam Tiwari',
+      verificationStatus: 'VERIFIED'
+    },
+  });
+  console.log('  ✅ Voter Documents seeded');
 
   // Seed officers
   const passwordHash = await bcrypt.hash('password123', 10);

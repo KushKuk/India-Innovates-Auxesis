@@ -27,9 +27,9 @@ const translations = {
     manual: 'Manual',
 
     // Stages
-    stage1Title: 'Stage 1: Identity Verification',
-    stage1Desc: 'Select ID type, then scan or enter details manually',
-    stage2Title: 'Stage 2: Biometric Verification',
+    stage1Title: 'Identity Verification',
+    stage1Desc: 'Scan QR code on your ID card',
+    stage2Title: 'Biometric Verification',
     stage2Desc: 'Place finger on scanner or look into facial reader',
     stage3Title: 'Stage 3: Voter ID Verification',
     stage3Desc: 'Enter or scan the voter\'s EPIC number',
@@ -156,7 +156,7 @@ const translations = {
     noActions: 'No actions recorded yet',
 
     // Stage labels for dashboard
-    aadhaarVerification: 'Aadhaar Verification',
+    identityVerification: 'Identity Verification',
     biometricVerification: 'Biometric Verification',
     voterIdVerification: 'Voter ID Verification',
   },
@@ -180,9 +180,10 @@ const translations = {
     primary: 'प्राथमिक',
     manual: 'मैनुअल',
 
-    stage1Title: 'चरण 1: पहचान सत्यापन',
-    stage1Desc: 'आईडी प्रकार चुनें, फिर स्कैन करें या मैन्युअल रूप से दर्ज करें',
-    stage2Title: 'चरण 2: बायोमेट्रिक सत्यापन',
+    // Stages
+    stage1Title: 'पहचान सत्यापन',
+    stage1Desc: 'अपने आईडी कार्ड पर QR कोड स्कैन करें',
+    stage2Title: 'बायोमेट्रिक सत्यापन',
     stage2Desc: 'स्कैनर पर उंगली रखें या फेशियल रीडर में देखें',
     stage3Title: 'चरण 3: मतदाता पहचान पत्र सत्यापन',
     stage3Desc: 'मतदाता का EPIC नंबर दर्ज करें या स्कैन करें',
@@ -297,7 +298,7 @@ const translations = {
     entries: 'प्रविष्टियाँ',
     noActions: 'अभी तक कोई कार्य दर्ज नहीं',
 
-    aadhaarVerification: 'आधार सत्यापन',
+    identityVerification: 'पहचान सत्यापन',
     biometricVerification: 'बायोमेट्रिक सत्यापन',
     voterIdVerification: 'मतदाता पहचान पत्र सत्यापन',
   },

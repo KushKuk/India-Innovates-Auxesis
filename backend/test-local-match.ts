@@ -6,7 +6,7 @@
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { pathToFileURL } from 'url';
-import { Human, Config } from '@vladmandic/human';
+import { Human, Config } from '@vladmandic/human/dist/human.node-wasm.js';
 import * as jpeg from 'jpeg-js';
 import { PNG } from 'pngjs';
 
@@ -43,6 +43,7 @@ async function runTest() {
   const config: Partial<Config> = {
     modelBasePath: 'https://vladmandic.github.io/human-models/models/',
     backend: 'wasm',
+    wasmPath: join(process.cwd(), 'node_modules', '@tensorflow', 'tfjs-backend-wasm', 'dist', '/'),
     debug: false,
 
     face: { enabled: true, detector: { rotation: false, return: true }, description: { enabled: true } },

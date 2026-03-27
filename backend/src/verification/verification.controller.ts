@@ -1,12 +1,17 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { VerificationService } from './verification.service';
-import { DigitalVerifyDto, FaceMatchDto, ManualVerifyDto } from './dto/verification.dto';
+import { DigitalVerifyDto, FaceMatchDto, ManualVerifyDto, ScanQrDto } from './dto/verification.dto';
 
 @ApiTags('Verification')
 @Controller('verification')
 export class VerificationController {
   constructor(private readonly verificationService: VerificationService) {}
+
+  @Get('ping')
+  async ping() {
+    return { status: 'ok', message: 'Verification controller is alive' };
+  }
 
   @Post('digital')
   @ApiOperation({ summary: 'Run digital verification (ID + biometric) and generate token' })
@@ -31,5 +36,11 @@ export class VerificationController {
   async faceMatch(@Body() dto: FaceMatchDto) {
     console.log(`[TRACE] Controller: face-match received for ${dto.voterId}`);
     return this.verificationService.faceMatch(dto.voterId, dto.liveImage);
+  }
+
+  @Post('scan-qr')
+  @ApiOperation({ summary: 'Identify user by scanning Base64 QR code' })
+  async scanQr(@Body() dto: ScanQrDto) {
+    return this.verificationService.scanQr(dto.qrString);
   }
 }

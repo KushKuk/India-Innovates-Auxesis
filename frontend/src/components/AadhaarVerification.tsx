@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { CreditCard, ChevronDown, FileText, TriangleAlert as AlertTriangle, Scan } from 'lucide-react';
+import { CreditCard, ChevronDown, FileText, TriangleAlert as AlertTriangle, Scan, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -9,31 +9,19 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Html5Qrcode } from 'html5-qrcode';
+import { scanQr } from '@/lib/api';
+import { toast } from 'sonner';
+import { ScannedIDCard } from './ScannedIDCard';
 
 const MAX_ID_ATTEMPTS = 3;
 
 interface Props {
-  onSuccess: (voterId: string) => void;
+  onSuccess: (voterId: string, voterInfo: { id: string, name: string, documentType: string, documentNumber: string }) => void;
   onFail: () => void;
   onSwitchManual: () => void;
 }
 
-const ID_TYPE_KEYS = [
-  { value: 'voter_id', labelKey: 'voterId' },
-  { value: 'aadhaar', labelKey: 'aadhaarCard' },
-  { value: 'pan', labelKey: 'panCard' },
-  { value: 'driving_license', labelKey: 'drivingLicense' },
-  { value: 'passport', labelKey: 'passport' },
-  { value: 'mgnrega', labelKey: 'mgnregaCard' },
-  { value: 'smart_card', labelKey: 'smartCard' },
-  { value: 'health_insurance', labelKey: 'healthInsurance' },
-  { value: 'service_id', labelKey: 'serviceId' },
-  { value: 'pension', labelKey: 'pensionDoc' },
-  { value: 'passbook', labelKey: 'passbook' },
-  { value: 'transgender_certificate', labelKey: 'transgenderCertificate' },
-] as const;
-
-type IdType = typeof ID_TYPE_KEYS[number]['value'];
 
 function playAlarmBeep() {
   try {
@@ -55,18 +43,17 @@ function playAlarmBeep() {
 export function AadhaarVerification({ onSuccess, onFail, onSwitchManual }: Props) {
   const { t } = useLanguage();
 
-  const [selectedIdType, setSelectedIdType] = useState<IdType>('voter_id');
-  const [idNumber, setIdNumber] = useState('');
+  const [scannedVoter, setScannedVoter] = useState<{ id: string, name: string, documentType: string, documentNumber: string } | null>(null);
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<'idle' | 'success' | 'fail'>('idle');
   const [failAttempts, setFailAttempts] = useState(0);
   const [locked, setLocked] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const qrScannerRef = useRef<Html5Qrcode | null>(null);
 
   const alarmPlayedRef = useRef(false);
 
-  const selectedLabel = t(
-    ID_TYPE_KEYS.find((x) => x.value === selectedIdType)!.labelKey as any
-  );
 
   const triggerLockout = useCallback(() => {
     setLocked(true);
@@ -76,25 +63,75 @@ export function AadhaarVerification({ onSuccess, onFail, onSwitchManual }: Props
     }
   }, []);
 
-  const startHardwareScan = () => {
+
+  const startIdScan = async () => {
     if (locked) return;
 
     setScanning(true);
     setResult('idle');
-    setIdNumber('');
 
-    setTimeout(() => {
-      // INTERNAL TEST OVERRIDE: Always succeed as VOT001 (Kushaagra Goel)
-      setIdNumber('VOT001 (KUSHAAGRA GOEL)');
+    try {
+      // Create a container for the scanner if it doesn't exist
+      const scannerContainerId = 'qr-reader';
+      
+      // We need to wait for the element to be in the DOM
+      // Since we just setScanning(true), we'll wait for the next tick
+      setTimeout(async () => {
+        const scanner = new Html5Qrcode(scannerContainerId);
+        qrScannerRef.current = scanner;
+
+        await scanner.start(
+          { facingMode: 'environment' },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+          },
+          async (decodedText) => {
+            // Success! We found a QR code
+            console.log('QR Decoded:', decodedText);
+            
+            try {
+              // Call backend to decode and verify Base64 TYPE|ID
+              const voter = await scanQr(decodedText);
+              
+              // If we reached here, voter was found
+              await scanner.stop();
+              qrScannerRef.current = null;
+              
+              setScannedVoter({
+                id: voter.id,
+                name: voter.name,
+                documentType: (voter as any).documentType || 'ID',
+                documentNumber: (voter as any).documentNumber || voter.id
+              });
+              setScanning(false);
+              setResult('success');
+              
+              // Hold for 2 seconds then proceed
+              setTimeout(() => onSuccess(voter.id, {
+                id: voter.id,
+                name: voter.name,
+                documentType: (voter as any).documentType || 'ID',
+                documentNumber: (voter as any).documentNumber || voter.id
+              }), 2000);
+            } catch (err: any) {
+              console.error('Scan verification failed:', err);
+              toast.error(err.message || 'Invalid ID card or record not found');
+            }
+          },
+          (errorMessage) => {
+            // Scan failed (usually just no QR in frame)
+          }
+        );
+      }, 100);
+
+    } catch (err) {
+      console.error('Failed to start scanner:', err);
       setScanning(false);
-      handleSuccess('VOT001');
-    }, 1500);
+      toast.error('Failed to start camera scanner');
+    }
   };
 
-  const handleSuccess = (voterId: string) => {
-    setResult('success');
-    setTimeout(() => onSuccess(voterId), 800);
-  };
 
   const handleFailure = () => {
     setResult('fail');
@@ -113,7 +150,7 @@ export function AadhaarVerification({ onSuccess, onFail, onSwitchManual }: Props
     return (
       <Card className="fade-in border-destructive/40 shadow-lg">
         <CardHeader>
-          <CardTitle className="text-destructive">{t('stage1Title')}</CardTitle>
+          <CardTitle className="text-destructive font-bold text-xl">{t('identityVerification')}</CardTitle>
           <CardDescription>{t('stage1Desc')}</CardDescription>
         </CardHeader>
         <CardContent className="text-center space-y-4">
@@ -130,99 +167,63 @@ export function AadhaarVerification({ onSuccess, onFail, onSwitchManual }: Props
   return (
     <Card className="fade-in border-primary/20 shadow-lg">
       <CardHeader>
-        <CardTitle>{t('stage1Title')}</CardTitle>
+        <CardTitle className="font-bold text-xl">{t('identityVerification')}</CardTitle>
         <CardDescription>{t('stage1Desc')}</CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-4">
 
-        {/* ID Type */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="w-full justify-between">
-              <span className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                {selectedLabel}
-              </span>
-              <ChevronDown className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            {ID_TYPE_KEYS.map((type) => (
-              <DropdownMenuItem
-                key={type.value}
-                onClick={() => setSelectedIdType(type.value)}
-              >
-                {t(type.labelKey as any)}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* Scanner UI */}
+        {/* Initial UI */}
         {!scanning && result === 'idle' && (
           <div className="space-y-4">
             <div className="p-5 border rounded-lg bg-muted/40 text-center space-y-3">
-              <Scan className="w-10 h-10 mx-auto text-primary" />
+              <Camera className="w-10 h-10 mx-auto text-primary" />
               <p className="text-sm font-medium">
-                Please scan your ID using the hardware scanner
+                Please position your ID card in front of the camera
               </p>
-              <Button onClick={startHardwareScan}>
-                Initiate Scan
+              <Button onClick={startIdScan} className="w-full gap-2 py-6 text-lg font-semibold shadow-md">
+                <Scan className="w-5 h-5" /> Start Camera Scan
               </Button>
             </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground italic">
-                  Internal Test Mode
-                </span>
-              </div>
-            </div>
-
-            <div className="p-4 border border-dashed rounded-lg bg-primary/5 space-y-3">
-              <p className="text-xs font-semibold text-primary uppercase text-center">Manual ID Entry (Testing Only)</p>
-              <div className="flex gap-2">
-                <input 
-                  type="text" 
-                  placeholder="Enter Voter ID (e.g. VOT001)" 
-                  className="flex-1 px-3 py-2 text-sm bg-background border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  value={idNumber}
-                  onChange={(e) => setIdNumber(e.target.value.toUpperCase())}
-                />
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  disabled={!idNumber.trim()}
-                  onClick={() => handleSuccess(idNumber.trim())}
-                >
-                  Confirm
-                </Button>
-              </div>
-              <p className="text-[10px] text-muted-foreground text-center">
-                Use this to switch between test accounts without code changes.
-              </p>
-            </div>
+            
           </div>
         )}
 
-        {/* Scanning */}
+        {/* Scanning with Video Preview */}
         {scanning && (
-          <div className="text-center space-y-2">
-            <Scan className="w-10 h-10 mx-auto animate-pulse text-primary" />
-            <p>Scanning...</p>
+          <div className="space-y-4">
+             <div className="relative aspect-video rounded-lg overflow-hidden border-2 border-primary bg-black">
+                <div id="qr-reader" className="w-full h-full" />
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                   <div className="w-64 h-64 border-2 border-primary/50 rounded-lg flex items-center justify-center">
+                      <div className="scan-line absolute inset-x-0 h-1 bg-primary/60 z-10" />
+                      <p className="text-primary text-[10px] uppercase font-bold bg-black/40 px-2 py-1 rounded">Align QR Code Here</p>
+                   </div>
+                </div>
+             </div>
+             <div className="text-center space-y-2">
+                <p className="text-sm font-semibold animate-pulse text-primary">Scanning for ID QR Code...</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mx-auto"
+                  onClick={async () => {
+                    if (qrScannerRef.current) {
+                      await qrScannerRef.current.stop();
+                      qrScannerRef.current = null;
+                    }
+                    setScanning(false);
+                  }}
+                >
+                  Cancel Scan
+                </Button>
+             </div>
           </div>
         )}
 
         {/* Success */}
-        {result === 'success' && (
-          <div className="text-green-600 text-center">
-            ✓ ID Verified Successfully
-            <div className="font-mono mt-1">{idNumber}</div>
-          </div>
+        {result === 'success' && scannedVoter && (
+          <ScannedIDCard voter={scannedVoter} />
         )}
 
         {/* Failure */}
@@ -232,7 +233,7 @@ export function AadhaarVerification({ onSuccess, onFail, onSwitchManual }: Props
             <div className="text-sm">
               {failAttempts}/{MAX_ID_ATTEMPTS} attempts used
             </div>
-            <Button variant="outline" onClick={startHardwareScan}>
+            <Button variant="outline" onClick={startIdScan}>
               Retry Scan
             </Button>
           </div>

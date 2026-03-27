@@ -20,11 +20,13 @@ export function ProgressStepper({ stages, currentStage }: ProgressStepperProps) 
   const stageKeys = Object.keys(stages);
   const iconMap: Record<string, React.ReactNode> = {
     identity: <CreditCard className="w-5 h-5" />,
+    aadhaar: <CreditCard className="w-5 h-5" />,
     biometric: <Fingerprint className="w-5 h-5" />,
     voterId: <ShieldCheck className="w-5 h-5" />,
   };
   const labelMap: Record<string, string> = {
-    identity: 'Identity',
+    identity: t('identityVerification'),
+    aadhaar: t('identityVerification'),
     biometric: t('biometric'),
     voterId: t('voterId'),
   };

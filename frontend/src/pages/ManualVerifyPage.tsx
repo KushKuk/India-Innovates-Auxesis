@@ -19,29 +19,19 @@ export default function ManualVerifyPage() {
   const [tokenGenerated, setTokenGenerated] = useState(false);
   const [generatedToken, setGeneratedToken] = useState('');
   const [currentVoterId, setCurrentVoterId] = useState('');
+  const [currentVoterName, setCurrentVoterName] = useState('');
 
   const terminalAudit = auditLog.filter(e => e.terminal === 'manual');
 
-  const handleManualComplete = useCallback((token: string) => {
+  const handleManualComplete = useCallback((token: string, voterId: string, voterName: string) => {
     setGeneratedToken(token);
     setTokenGenerated(true);
-    const voterId = 'VTR' + Math.random().toString(36).substring(2, 8).toUpperCase();
     setCurrentVoterId(voterId);
+    setCurrentVoterName(voterName);
 
-    addVoter({
-      name: 'Manual Voter',
-      voterId,
-      idType: 'manual',
-      idNumber: '****',
-      token,
-      tokenGeneratedAt: new Date(),
-      tokenExpiresAt: new Date(Date.now() + 3 * 60 * 1000),
-      verificationMode: 'manual',
-      votingStatus: 'TOKEN_ACTIVE',
-      hasVoted: false,
-    });
+    // No need to call addVoter here as ManualVerification already does it
     addAuditEntry({ terminal: 'manual', action: 'Manual verification approved & token generated', status: 'success', details: `Token: ${token}`, voterId });
-  }, [addVoter, addAuditEntry]);
+  }, [addAuditEntry]);
 
   const handleReset = useCallback(() => {
     setTokenGenerated(false);
@@ -86,7 +76,12 @@ export default function ManualVerifyPage() {
                 <div className="inline-block px-8 py-4 bg-muted rounded-xl border-2 border-dashed border-warning/30 my-4">
                   <p className="text-4xl font-mono font-bold tracking-[0.3em] text-warning">{generatedToken}</p>
                 </div>
-                <p className="text-sm text-muted-foreground mb-2">Voter ID: <span className="font-mono">{currentVoterId}</span></p>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Voter Name: <span className="font-semibold text-foreground">{currentVoterName}</span>
+                </p>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Voter ID: <span className="font-mono text-foreground">{currentVoterId}</span>
+                </p>
                 <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-warning/10 text-warning text-xs font-medium rounded-full mb-6">
                   {t('manualVerification')}
                 </div>

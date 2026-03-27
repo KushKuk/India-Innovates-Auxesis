@@ -1,0 +1,42 @@
+[2026-03-27T14:34:46.951Z] FaceMatch Error for VOT02:
+Voter not found in electoral roll
+NotFoundException: Voter not found in electoral roll
+    at VerificationService.faceMatch (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:104:25)
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-03-27T14:35:01.113Z] FaceMatch Error for VOT02:
+Voter not found in electoral roll
+NotFoundException: Voter not found in electoral roll
+    at VerificationService.faceMatch (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:104:25)
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-03-27T14:35:05.869Z] FaceMatch Error for VOT02:
+Voter not found in electoral roll
+NotFoundException: Voter not found in electoral roll
+    at VerificationService.faceMatch (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:104:25)
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-03-27T14:35:08.961Z] FaceMatch Error for VOT02:
+Voter not found in electoral roll
+NotFoundException: Voter not found in electoral roll
+    at VerificationService.faceMatch (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:104:25)
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-03-27T14:35:35.984Z] FaceMatch Error for VOT02:
+Voter not found in electoral roll
+NotFoundException: Voter not found in electoral roll
+    at VerificationService.faceMatch (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:104:25)
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-03-27T14:35:38.419Z] FaceMatch Error for VOT02:
+Voter not found in electoral roll
+NotFoundException: Voter not found in electoral roll
+    at VerificationService.faceMatch (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:104:25)
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-proxy.js:9:17
+

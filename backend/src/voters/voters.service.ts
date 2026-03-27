@@ -8,10 +8,17 @@ export class VotersService {
   async search(name: string, dobOrAge?: string, useAge?: boolean) {
     const searchName = name.toLowerCase().trim();
 
-    const voters = await this.prisma.voter.findMany({
+    const voters = await (this.prisma.voter as any).findMany({
       where: {
         name: { contains: searchName },
       },
+      include: {
+        documents: {
+          include: {
+            documentType: true
+          }
+        }
+      }
     });
 
     if (!dobOrAge) return voters;
@@ -25,13 +32,32 @@ export class VotersService {
   }
 
   async findById(id: string) {
-    return this.prisma.voter.findUnique({ where: { id } });
+    return (this.prisma.voter as any).findUnique({
+      where: { id },
+      include: {
+        documents: {
+          include: {
+            documentType: true
+          }
+        }
+      }
+    });
   }
 
   async markAsVoted(id: string) {
     return this.prisma.voter.update({
       where: { id },
-      data: { hasVoted: true },
+      data: { 
+        hasVoted: true,
+        votingStatus: 'VOTED'
+      },
+    });
+  }
+
+  async updateVotingStatus(id: string, status: string) {
+    return this.prisma.voter.update({
+      where: { id },
+      data: { votingStatus: status },
     });
   }
 

@@ -12,12 +12,19 @@ export interface AuditEntry {
 
 export interface Voter {
   id: string;
+  voterId: string;
   name: string;
   dob: string; // YYYY-MM-DD
   age: number;
   address: string;
   photoUrl: string;
   hasVoted: boolean;
+  documents?: {
+    documentNumber: string;
+    documentType: {
+      name: string;
+    };
+  }[];
 }
 
 export interface ManualVerificationState {
@@ -47,4 +54,10 @@ export interface VerificationState {
   token: string | null;
   auditLog: AuditEntry[];
   isOnline: boolean;
+  scannedVoter?: {
+    id: string;
+    name: string;
+    documentType: string;
+    documentNumber: string;
+  } | null;
 }

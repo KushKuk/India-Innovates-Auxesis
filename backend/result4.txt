@@ -1,0 +1,246 @@
+﻿--- Setting up Local Face Match Internal Test ---
+node.exe : Aborted(Error: 
+ENOENT: no such file or 
+directory, open 'C:\Users\L
+enovo\.gemini\antigravity\s
+cratch\India-Innovates-Auxe
+sis\backend\https:\cdn.jsde
+livr.net\npm\@tensorflow\tf
+js-backend-wasm@4.22.0\dist
+\tfjs-backend-wasm-simd.was
+m')
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: (Abo  
+  rted(Error: ...asm-sim   
+ d.wasm'):String) [], R    
+emoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+failed to asynchronously 
+prepare wasm: 
+RuntimeError: 
+Aborted(Error: ENOENT: no 
+such file or directory, 
+open 'C:\Users\Lenovo\.gemi
+ni\antigravity\scratch\Indi
+a-Innovates-Auxesis\backend
+\https:\cdn.jsdelivr.net\np
+m\@tensorflow\tfjs-backend-
+wasm@4.22.0\dist\tfjs-backe
+nd-wasm-simd.wasm'). Build 
+with -sASSERTIONS for more 
+info.
+Aborted(RuntimeError: 
+Aborted(Error: ENOENT: no 
+such file or directory, 
+open 'C:\Users\Lenovo\.gemi
+ni\antigravity\scratch\Indi
+a-Innovates-Auxesis\backend
+\https:\cdn.jsdelivr.net\np
+m\@tensorflow\tfjs-backend-
+wasm@4.22.0\dist\tfjs-backe
+nd-wasm-simd.wasm'). Build 
+with -sASSERTIONS for more 
+info.)
+Initialization of backend 
+wasm failed
+Make sure the server can 
+serve the `.wasm` file 
+relative to the bundled js 
+file. For more details see 
+https://github.com/tensorfl
+ow/tfjs/blob/master/tfjs-ba
+ckend-wasm/README.md#using-
+bundlers
+Aborted(Error: ENOENT: no 
+such file or directory, 
+open 'C:\Users\Lenovo\.gemi
+ni\antigravity\scratch\Indi
+a-Innovates-Auxesis\backend
+\https:\cdn.jsdelivr.net\np
+m\@tensorflow\tfjs-backend-
+wasm@4.22.0\dist\tfjs-backe
+nd-wasm-simd.wasm')
+failed to asynchronously 
+prepare wasm: 
+RuntimeError: 
+Aborted(Error: ENOENT: no 
+such file or directory, 
+open 'C:\Users\Lenovo\.gemi
+ni\antigravity\scratch\Indi
+a-Innovates-Auxesis\backend
+\https:\cdn.jsdelivr.net\np
+m\@tensorflow\tfjs-backend-
+wasm@4.22.0\dist\tfjs-backe
+nd-wasm-simd.wasm'). Build 
+with -sASSERTIONS for more 
+info.
+Aborted(RuntimeError: 
+Aborted(Error: ENOENT: no 
+such file or directory, 
+open 'C:\Users\Lenovo\.gemi
+ni\antigravity\scratch\Indi
+a-Innovates-Auxesis\backend
+\https:\cdn.jsdelivr.net\np
+m\@tensorflow\tfjs-backend-
+wasm@4.22.0\dist\tfjs-backe
+nd-wasm-simd.wasm'). Build 
+with -sASSERTIONS for more 
+info.)
+Initialization of backend 
+wasm failed
+RuntimeError: 
+Aborted(Error: ENOENT: no 
+such file or directory, 
+open 'C:\Users\Lenovo\.gemi
+ni\antigravity\scratch\Indi
+a-Innovates-Auxesis\backend
+\https:\cdn.jsdelivr.net\np
+m\@tensorflow\tfjs-backend-
+wasm@4.22.0\dist\tfjs-backe
+nd-wasm-simd.wasm'). Build 
+with -sASSERTIONS for more 
+info.
+    at abort (C:\Users\Leno
+vo\.gemini\antigravity\scra
+tch\India-Innovates-Auxesis
+\backend\node_modules\@tens
+orflow\tfjs-backend-wasm\di
+st\wasm-out\tfjs-backend-wa
+sm.js:9:7829)
+    at getBinary (C:\Users\
+Lenovo\.gemini\antigravity\
+scratch\India-Innovates-Aux
+esis\backend\node_modules\@
+tensorflow\tfjs-backend-was
+m\dist\wasm-out\tfjs-backen
+d-wasm.js:9:8427)
+    at C:\Users\Lenovo\.gem
+ini\antigravity\scratch\Ind
+ia-Innovates-Auxesis\backen
+d\node_modules\@tensorflow\
+tfjs-backend-wasm\dist\wasm
+-out\tfjs-backend-wasm.js:9
+:9038
+    at 
+processTicksAndRejections (
+node:internal/process/task_
+queues:104:5)
+19:36:44.109 Human: error: cannot set backend: wasm Error: Could not initialize any backends, all backend initializations failed.
+    at Engine.<anonymous> (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\tfjs-core\src\engine.ts:206:11)
+    at step (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\tslib\tslib.es6.js:102:23)
+    at Object.next (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\tslib\tslib.es6.js:83:53)
+    at fulfilled (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\tslib\tslib.es6.js:73:58)
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)
+19:36:44.180 Human: error: backend check failed
+Aborted(Error: ENOENT: no 
+such file or directory, 
+open 'C:\Users\Lenovo\.gemi
+ni\antigravity\scratch\Indi
+a-Innovates-Auxesis\backend
+\https:\cdn.jsdelivr.net\np
+m\@tensorflow\tfjs-backend-
+wasm@4.22.0\dist\tfjs-backe
+nd-wasm-simd.wasm')
+failed to asynchronously 
+prepare wasm: 
+RuntimeError: 
+Aborted(Error: ENOENT: no 
+such file or directory, 
+open 'C:\Users\Lenovo\.gemi
+ni\antigravity\scratch\Indi
+a-Innovates-Auxesis\backend
+\https:\cdn.jsdelivr.net\np
+m\@tensorflow\tfjs-backend-
+wasm@4.22.0\dist\tfjs-backe
+nd-wasm-simd.wasm'). Build 
+with -sASSERTIONS for more 
+info.
+Aborted(RuntimeError: 
+Aborted(Error: ENOENT: no 
+such file or directory, 
+open 'C:\Users\Lenovo\.gemi
+ni\antigravity\scratch\Indi
+a-Innovates-Auxesis\backend
+\https:\cdn.jsdelivr.net\np
+m\@tensorflow\tfjs-backend-
+wasm@4.22.0\dist\tfjs-backe
+nd-wasm-simd.wasm'). Build 
+with -sASSERTIONS for more 
+info.)
+Initialization of backend 
+wasm failed
+RuntimeError: 
+Aborted(Error: ENOENT: no 
+such file or directory, 
+open 'C:\Users\Lenovo\.gemi
+ni\antigravity\scratch\Indi
+a-Innovates-Auxesis\backend
+\https:\cdn.jsdelivr.net\np
+m\@tensorflow\tfjs-backend-
+wasm@4.22.0\dist\tfjs-backe
+nd-wasm-simd.wasm'). Build 
+with -sASSERTIONS for more 
+info.
+    at abort (C:\Users\Leno
+vo\.gemini\antigravity\scra
+tch\India-Innovates-Auxesis
+\backend\node_modules\@tens
+orflow\tfjs-backend-wasm\di
+st\wasm-out\tfjs-backend-wa
+sm.js:9:7829)
+    at getBinary (C:\Users\
+Lenovo\.gemini\antigravity\
+scratch\India-Innovates-Aux
+esis\backend\node_modules\@
+tensorflow\tfjs-backend-was
+m\dist\wasm-out\tfjs-backen
+d-wasm.js:9:8427)
+    at C:\Users\Lenovo\.gem
+ini\antigravity\scratch\Ind
+ia-Innovates-Auxesis\backen
+d\node_modules\@tensorflow\
+tfjs-backend-wasm\dist\wasm
+-out\tfjs-backend-wasm.js:9
+:9038
+    at 
+processTicksAndRejections (
+node:internal/process/task_
+queues:104:5)
+Error: Could not 
+initialize any backends, 
+all backend 
+initializations failed.
+    at Engine.<anonymous> (
+C:\Users\Lenovo\.gemini\ant
+igravity\scratch\India-Inno
+vates-Auxesis\backend\tfjs-
+core\src\engine.ts:206:11)
+    at step (C:\Users\Lenov
+o\.gemini\antigravity\scrat
+ch\India-Innovates-Auxesis\
+backend\node_modules\tslib\
+tslib.es6.js:102:23)
+    at Object.next (C:\User
+s\Lenovo\.gemini\antigravit
+y\scratch\India-Innovates-A
+uxesis\backend\node_modules
+\tslib\tslib.es6.js:83:53)
+    at fulfilled (C:\Users\
+Lenovo\.gemini\antigravity\
+scratch\India-Innovates-Aux
+esis\backend\node_modules\t
+slib\tslib.es6.js:73:58)
+    at 
+processTicksAndRejections (
+node:internal/process/task_
+queues:104:5)

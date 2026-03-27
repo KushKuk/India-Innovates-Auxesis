@@ -9,7 +9,10 @@ import { TokenGeneration } from '@/components/TokenGeneration';
 import { ManualVerification } from '@/components/ManualVerification';
 import { AuditLog } from '@/components/AuditLog';
 import { LanguageSelection } from '@/components/LanguageSelection';
+import { ScannedIDCard } from '@/components/ScannedIDCard';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useVoterDB } from '@/contexts/VoterContext';
+import { updateVoterStatusInBackend } from '@/lib/api';
 import type { VerificationState, AuditEntry, StageStatus } from '@/types/verification';
 
 const generateToken = () => Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -22,6 +25,7 @@ const initialState: VerificationState = {
   token: null,
   auditLog: [],
   isOnline: true,
+  scannedVoter: null,
 };
 
 export function VerificationDashboard() {
@@ -30,6 +34,7 @@ export function VerificationDashboard() {
   const [voted, setVoted] = useState(false);
   const [languageSelected, setLanguageSelected] = useState(false);
   const { t } = useLanguage();
+  const { addVoter } = useVoterDB();
 
   const addLog = useCallback((action: string, status: AuditEntry['status'], details?: string) => {
     const entry: AuditEntry = { id: crypto.randomUUID(), timestamp: new Date(), action, status, details };
@@ -40,11 +45,35 @@ export function VerificationDashboard() {
     setState(prev => ({ ...prev, stages: { ...prev.stages, [stage]: status } }));
   }, []);
 
-  const handleAadhaarSuccess = useCallback((voterId: string) => {
+  const handleAadhaarSuccess = useCallback((voterId: string, voterInfo?: any) => {
+    console.log('Dashboard: Aadhaar Success Received', { voterId, voterInfo });
     updateStage('aadhaar', 'success');
     updateStage('biometric', 'active');
-    setState(prev => ({ ...prev, currentStage: 1, voterId }));
-    addLog('Aadhaar verified', 'success', `Identity confirmed via UIDAI (Voter: ${voterId})`);
+    
+    // Sync with global VoterContext for Token Verification terminal
+    if (voterInfo) {
+      addVoter({
+        id: voterInfo.id,
+        voterId: voterId,
+        name: voterInfo.name,
+        idType: voterInfo.documentType || 'aadhaar',
+        idNumber: voterInfo.documentNumber || voterId,
+        token: '', // Not generated yet
+        tokenGeneratedAt: new Date(),
+        tokenExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        verificationMode: 'digital',
+        votingStatus: 'NOT_VOTED',
+        hasVoted: false
+      });
+    }
+
+    setState(prev => ({ 
+      ...prev, 
+      currentStage: 1, 
+      voterId,
+      scannedVoter: voterInfo || null
+    }));
+    addLog('Identity verified', 'success', `Identity confirmed (Voter: ${voterId})`);
   }, [updateStage, addLog]);
 
   const handleAadhaarFail = useCallback(() => {
@@ -64,13 +93,36 @@ export function VerificationDashboard() {
     addLog('Biometric verification failed', 'error', 'No match found');
   }, [updateStage, addLog]);
 
-  const handleVoterIdSuccess = useCallback(() => {
+  const handleVoterIdSuccess = useCallback(async () => {
     updateStage('voterId', 'success');
     const token = generateToken();
+    
+    // Sync with global VoterContext and BACKEND
+    if (state.voterId && state.scannedVoter) {
+      try {
+        await updateVoterStatusInBackend(state.scannedVoter.id, 'TOKEN_ACTIVE');
+      } catch (error) {
+        console.error('Failed to update backend status:', error);
+      }
+
+      addVoter({
+        voterId: state.voterId,
+        name: state.scannedVoter.name,
+        idType: state.scannedVoter.documentType || 'id',
+        idNumber: state.scannedVoter.documentNumber || state.voterId,
+        token: token,
+        tokenGeneratedAt: new Date(),
+        tokenExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        verificationMode: 'digital',
+        votingStatus: 'TOKEN_ACTIVE',
+        hasVoted: false
+      });
+    }
+
     setState(prev => ({ ...prev, currentStage: 3, token }));
     addLog('Voter ID verified', 'success', 'EPIC number matched');
     addLog('Token generated', 'info', `Token: ${token}`);
-  }, [updateStage, addLog]);
+  }, [updateStage, addLog, addVoter, state.voterId, state.scannedVoter]);
 
   const handleVoterIdFail = useCallback(() => {
     updateStage('voterId', 'failed');
@@ -82,10 +134,10 @@ export function VerificationDashboard() {
     addLog('Switched to manual verification', 'warning', 'Primary verification unavailable');
   }, [addLog]);
 
-  const handleManualComplete = useCallback((token: string) => {
-    setState(prev => ({ ...prev, token, currentStage: 3 }));
+  const handleManualComplete = useCallback((token: string, voterId: string, _voterName: string) => {
+    setState(prev => ({ ...prev, token, voterId, currentStage: 3 }));
     addLog('Manual verification approved', 'success', 'Supervisor approved');
-    addLog('Manual token generated', 'info', `Token: ${token}`);
+    addLog('Manual token generated', 'info', `Token: ${token} (Voter: ${voterId})`);
   }, [addLog]);
 
   const handleProceedToVote = useCallback(() => {
@@ -121,7 +173,7 @@ export function VerificationDashboard() {
     ? t('tokenGenerated')
     : state.mode === 'manual'
     ? t('manualVerification')
-    : [t('aadhaarVerification'), t('biometricVerification'), t('voterIdVerification')][state.currentStage];
+    : [t('identityVerification'), t('biometricVerification'), t('voterIdVerification')][state.currentStage];
 
   return (
     <div className="min-h-screen bg-background">
@@ -175,6 +227,12 @@ export function VerificationDashboard() {
               </div>
             </div>
 
+            {state.scannedVoter && !voted && (
+              <div className="mb-6">
+                <ScannedIDCard voter={state.scannedVoter} />
+              </div>
+            )}
+
             {state.mode === 'primary' && !voted && (
               <div className="bg-card border border-border rounded-lg p-4">
                 <ProgressStepper stages={state.stages} currentStage={state.currentStage} />
@@ -194,7 +252,8 @@ export function VerificationDashboard() {
               </div>
             ) : state.token ? (
               <TokenGeneration
-                token={state.token}
+                token={state.token || ''}
+                voterId={state.voterId || ''}
                 isManual={state.mode === 'manual'}
                 onProceedToVote={handleProceedToVote}
               />
@@ -218,6 +277,7 @@ export function VerificationDashboard() {
                 {state.currentStage === 1 && (
                   <BiometricVerification
                     voterId={state.voterId}
+                    voterInfo={state.scannedVoter}
                     onSuccess={handleBiometricSuccess}
                     onFail={handleBiometricFail}
                     onSwitchManual={switchToManual}
@@ -225,6 +285,7 @@ export function VerificationDashboard() {
                 )}
                 {state.currentStage === 2 && (
                   <VoterIdVerification
+                    voterId={state.voterId}
                     onSuccess={handleVoterIdSuccess}
                     onFail={handleVoterIdFail}
                     onSwitchManual={switchToManual}

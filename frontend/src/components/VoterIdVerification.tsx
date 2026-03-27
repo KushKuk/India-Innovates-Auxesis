@@ -1,33 +1,77 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { ShieldCheck, Scan } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Html5Qrcode } from 'html5-qrcode';
+import { scanQr } from '@/lib/api';
+import { toast } from 'sonner';
 
 interface Props {
+  voterId: string | null;
   onSuccess: () => void;
   onFail: () => void;
   onSwitchManual: () => void;
 }
 
-export function VoterIdVerification({ onSuccess, onFail, onSwitchManual }: Props) {
+export function VoterIdVerification({ voterId: expectedVoterId, onSuccess, onFail, onSwitchManual }: Props) {
   const { t } = useLanguage();
   const [voterId, setVoterId] = useState('');
   const [isScanned, setIsScanned] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [result, setResult] = useState<'idle' | 'success' | 'fail'>('idle');
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const qrScannerRef = useRef<Html5Qrcode | null>(null);
 
-  const handleScanVoterId = () => {
+
+  const handleScanVoterId = async () => {
     setVerifying(true);
     setResult('idle');
-    // Simulate scanning the voter ID
-    setTimeout(() => {
+
+    try {
+      const scannerContainerId = 'voter-id-reader';
+      
+      setTimeout(async () => {
+        const scanner = new Html5Qrcode(scannerContainerId);
+        qrScannerRef.current = scanner;
+
+        await scanner.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          async (decodedText) => {
+            console.log('Voter ID QR Decoded:', decodedText);
+            
+            try {
+              // Call backend to verify QR
+              const detectedVoter = await scanQr(decodedText);
+              
+              // Verify if the scanned ID belongs to the voter we are currently processing
+              if (detectedVoter.id === expectedVoterId) {
+                await scanner.stop();
+                qrScannerRef.current = null;
+                
+                setVoterId(detectedVoter.id);
+                setIsScanned(true);
+                setVerifying(false);
+                toast.success('Voter ID Matched Successfully');
+              } else {
+                toast.error(`Mismatch! This card belongs to ${detectedVoter.name}, not the current voter.`);
+              }
+            } catch (err: any) {
+              console.error('Voter ID scan failed:', err);
+              toast.error(err.message || 'Invalid Voter ID card');
+            }
+          },
+          () => {}
+        );
+      }, 100);
+
+    } catch (err) {
+      console.error('Failed to start scanner:', err);
       setVerifying(false);
-      // INTERNAL TEST OVERRIDE: Always succeed as VOT001 (Kushaagra Goel)
-      setVoterId('VOT001 (KUSHAAGRA GOEL)');
-      setIsScanned(true);
-    }, 1500);
+      toast.error('Failed to start camera scanner');
+    }
   };
 
   const handleVerify = () => {
@@ -62,35 +106,42 @@ export function VoterIdVerification({ onSuccess, onFail, onSwitchManual }: Props
 
         {/* Camera Interface */}
         {verifying && (
-          <div className="fade-in relative rounded-lg overflow-hidden border-2 border-primary bg-black/90">
-            {/* Camera Feed Background */}
-            <div className="relative aspect-video bg-gradient-to-b from-gray-800 to-black flex items-center justify-center">
-              {/* Camera Frame */}
-              <div className="relative w-full h-full flex items-center justify-center">
-                {/* Corner brackets */}
-                <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-primary"></div>
-                <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-primary"></div>
-                <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-primary"></div>
-                <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-primary"></div>
-
-                {/* Scanning Line */}
-                <div className="absolute inset-0 overflow-hidden">
-                  <div className="scan-line absolute left-0 right-0 h-1 bg-gradient-to-b from-transparent via-primary to-transparent"></div>
+          <div className="fade-in relative rounded-lg overflow-hidden border-2 border-primary bg-black">
+             <div className="relative aspect-video">
+                <div id="voter-id-reader" className="w-full h-full" />
+                
+                {/* Scanning Overlay */}
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                   {/* Scanning Line */}
+                   <div className="scan-line absolute inset-x-0 h-1 bg-primary/60 z-10" />
+                   
+                   {/* Center Target */}
+                   <div className="w-64 h-64 border-2 border-primary/50 rounded-lg flex items-center justify-center">
+                     <div className="text-center">
+                       <Scan className="w-8 h-8 text-primary/70 mx-auto mb-2 animate-pulse" />
+                       <p className="text-primary/70 text-xs font-semibold">Align Voter ID QR Here</p>
+                     </div>
+                   </div>
                 </div>
-
-                {/* Center Target */}
-                <div className="absolute w-24 h-32 border-2 border-primary/50 rounded-lg flex items-center justify-center">
-                  <div className="text-center">
-                    <Scan className="w-8 h-8 text-primary/70 mx-auto mb-2 animate-pulse" />
-                    <p className="text-primary/70 text-xs font-semibold">Scanning...</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+             </div>
 
             {/* Status Text */}
-            <div className="bg-black/50 px-4 py-2 text-center border-t border-primary/30">
-              <p className="text-primary text-sm font-semibold">Camera Active - Position voter ID in frame</p>
+            <div className="bg-black/50 px-4 py-2 text-center border-t border-primary/30 flex justify-between items-center">
+              <p className="text-primary text-xs font-semibold">Position Voter ID in frame</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-7 text-[10px]"
+                onClick={async () => {
+                  if (qrScannerRef.current) {
+                    await qrScannerRef.current.stop();
+                    qrScannerRef.current = null;
+                  }
+                  setVerifying(false);
+                }}
+              >
+                Cancel
+              </Button>
             </div>
           </div>
         )}

@@ -20,6 +20,12 @@ export class VotersController {
     return this.votersService.findById(id);
   }
 
+  @Patch(':id/status')
+  @ApiOperation({ summary: 'Update voter voting status' })
+  async updateStatus(@Param('id') id: string, @Query('status') status: string) {
+    return this.votersService.updateVotingStatus(id, status);
+  }
+
   @Patch(':id/voted')
   @ApiOperation({ summary: 'Mark voter as voted' })
   async markAsVoted(@Param('id') id: string) {
@@ -31,6 +37,7 @@ export class VotersController {
   async getVotingStatus(@Param('id') id: string) {
     return this.votersService.getVotingStatus(id);
   }
+
 
   @Get()
   @ApiOperation({ summary: 'List all voters' })

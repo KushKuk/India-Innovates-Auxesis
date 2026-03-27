@@ -16,6 +16,7 @@ import { LanguageSelection } from '@/components/LanguageSelection';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLanguageSelection } from '@/contexts/LanguageSelectionContext';
 import { useVoterDB, type VoterRecord } from '@/contexts/VoterContext';
+import { markVoterAsVotedInBackend } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 const ID_TYPE_KEYS = [
@@ -116,9 +117,18 @@ export default function TokenCheckPage() {
     return () => clearInterval(interval);
   }, [votingInProgress, votingExpiry, voteConfirmed, isExpired, foundVoter, updateVotingStatus, addAuditEntry]);
 
-  const handleConfirmVote = useCallback(() => {
+  const handleConfirmVote = useCallback(async () => {
     if (!foundVoter) return;
     setVotingExpiry(null);
+    
+    // PERSIST TO BACKEND
+    try {
+      // Use the actual voterId (e.g. VOT001) which is the PK id in the backend
+      await markVoterAsVotedInBackend(foundVoter.voterId);
+    } catch (error) {
+      console.error('Failed to persist vote to backend:', error);
+    }
+
     updateVotingStatus(foundVoter.voterId, 'VOTED');
     setVoteConfirmed(true);
     addAuditEntry({ terminal: 'tvo', action: 'Vote confirmed (EVM signal)', status: 'success', details: 'has_voted = VOTED', voterId: foundVoter.voterId });

@@ -12,17 +12,46 @@ model Voter {
   name         String
   dob          String   // YYYY-MM-DD
   age          Int
+  gender       String?
   address      String
   photoUrl     String
   photoVerifiedAt DateTime?
   faceVerificationEnabled Boolean @default(true)
   votingStatus String   @default("PENDING") // PENDING | IN_PROGRESS | VOTED | EXPIRED
   hasVoted     Boolean  @default(false)
+  documentType String?
   createdAt    DateTime @default(now())
 
   tokens                Token[]
   auditLogs             AuditLog[]
   fingerprintTemplates  FingerprintTemplate[]
+  documents             VoterDocument[]
+}
+
+model DocumentType {
+  id           Int             @id @default(autoincrement())
+  name         String          @unique // e.g. "Aadhaar Card", "PAN Card"
+  documents    VoterDocument[]
+}
+
+model VoterDocument {
+  id                  Int       @id @default(autoincrement())
+  voterId             String
+  voter               Voter     @relation(fields: [voterId], references: [id])
+  documentTypeId      Int
+  documentType        DocumentType @relation(fields: [documentTypeId], references: [id])
+  documentTypeName    String?
+  documentNumber      String
+  nameOnDocument      String?
+  issuingAuthority    String?
+  issueDate           DateTime?
+  expiryDate          DateTime?
+  documentImage       Bytes?
+  verificationStatus  String    @default("PENDING")
+  verifiedAt          DateTime?
+  remarks             String?
+
+  @@unique([voterId, documentTypeId])
 }
 
 model Token {

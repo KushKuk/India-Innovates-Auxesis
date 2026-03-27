@@ -22,13 +22,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useVoterDB } from '@/contexts/VoterContext';
 import { searchVoters, markVoterAsVoted } from '@/lib/voterDatabase';
 import { Voter } from '@/types/verification';
-import { searchVotersFromBackend, markVoterAsVotedInBackend } from '@/lib/api';
+import { searchVotersFromBackend, markVoterAsVotedInBackend, updateVoterStatusInBackend, manualVerify } from '@/lib/api';
 import { auditLogger } from '@/lib/auditLogger';
 
 interface Props {
-  onComplete: (token: string) => void;
+  onComplete: (token: string, voterId: string, voterName: string) => void;
   onCancel: () => void;
   onAudit?: (action: string, status: 'info' | 'success' | 'error' | 'warning', details?: string) => void;
 }
@@ -56,6 +57,7 @@ const ID_TYPES = [
 
 export function ManualVerification({ onComplete, onCancel, onAudit }: Props) {
   const { t } = useLanguage();
+  const { addVoter } = useVoterDB();
 
   const audit = useCallback(
     (action: string, status: 'info' | 'success' | 'error' | 'warning', details?: string) => {
@@ -87,6 +89,7 @@ export function ManualVerification({ onComplete, onCancel, onAudit }: Props) {
 
   // Step 4: ID Verification
   const [idType, setIdType] = useState('');
+  const [idNumber, setIdNumber] = useState('');
   const [idVerified, setIdVerified] = useState(false);
 
   // Step 5: Demographic Verification
@@ -176,7 +179,25 @@ export function ManualVerification({ onComplete, onCancel, onAudit }: Props) {
   const handleIdVerified = (checked: boolean) => {
     setIdVerified(checked);
     if (checked) {
-      audit('ID verified', 'success', idType);
+      // Find matching document number from voter record
+      let matchedNumber = 'MANUAL';
+      if (selectedVoter?.documents) {
+        // Map common frontend idTypes to backend documentType names
+        const typeMap: Record<string, string> = {
+          'aadhaar': 'Aadhaar Card',
+          'pan': 'PAN Card',
+          'voter_id': 'Voter ID',
+          'driving_license': 'Driving License',
+          'passport': 'Passport',
+        };
+        const targetName = typeMap[idType] || idType;
+        const doc = selectedVoter.documents.find(d => 
+          d.documentType.name.toLowerCase() === targetName.toLowerCase()
+        );
+        if (doc) matchedNumber = doc.documentNumber;
+      }
+      setIdNumber(matchedNumber);
+      audit('ID verified', 'success', `${idType}: ${matchedNumber}`);
     }
   };
 
@@ -217,18 +238,39 @@ export function ManualVerification({ onComplete, onCancel, onAudit }: Props) {
     setSupervisorApproved(true);
     setProcessing(true);
 
-    // Step 9: Generate token and mark voter as voted
+    // Step 9: Generate token and update voter status
     try {
-      await markVoterAsVotedInBackend(selectedVoter.id);
-      const newToken = 'M-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+      const response = await manualVerify({
+        voterId: selectedVoter.id,
+        idType: idType || 'manual',
+        idNumber: idNumber || 'MANUAL',
+        reason: reason,
+        officerId: officerId
+      });
+      
+      const newToken = response.code;
       setToken(newToken);
       audit('Token generated', 'success', newToken);
-      audit('Voter marked as voted', 'info');
       setProcessing(false);
+
+      // Add to global VoterContext for Token Verification screen
+      addVoter({
+        id: selectedVoter.id,
+        voterId: selectedVoter.voterId || selectedVoter.id,
+        name: selectedVoter.name,
+        idType: idType || 'manual',
+        idNumber: idNumber || 'MANUAL',
+        token: newToken,
+        tokenGeneratedAt: new Date(),
+        tokenExpiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 min
+        verificationMode: 'manual',
+        votingStatus: 'TOKEN_ACTIVE',
+        hasVoted: false
+      });
 
       // Complete after showing success
       setTimeout(() => {
-        onComplete(newToken);
+        onComplete(newToken, selectedVoter.voterId || selectedVoter.id, selectedVoter.name);
       }, 1500);
     } catch (error) {
       audit('Token generation failed', 'error', error instanceof Error ? error.message : 'Unknown error');

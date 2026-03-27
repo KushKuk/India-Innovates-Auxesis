@@ -1,0 +1,8 @@
+--- Setting up Local Face Match Internal Test ---
+19:36:03.412 Human: error: cannot set backend: wasm Error: Could not initialize any backends, all backend initializations failed.
+    at Engine.<anonymous> (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\tfjs-core\src\engine.ts:206:11)
+    at step (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\tslib\tslib.es6.js:102:23)
+    at Object.next (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\tslib\tslib.es6.js:83:53)
+    at fulfilled (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\tslib\tslib.es6.js:73:58)
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)
+19:36:03.469 Human: error: backend check failed

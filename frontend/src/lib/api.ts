@@ -131,6 +131,30 @@ export async function markVoterAsVotedInBackend(id: string): Promise<ApiVoter> {
 }
 
 /**
+ * Update voter voting status (e.g. to TOKEN_ACTIVE)
+ */
+export async function updateVoterStatusInBackend(id: string, status: string): Promise<ApiVoter> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/voters/${id}/status?status=${status}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.statusText}`);
+    }
+
+    const voter = await response.json();
+    return normalizeVoter(voter);
+  } catch (error) {
+    console.error(`Error updating voter status to ${status}:`, error);
+    throw error;
+  }
+}
+
+/**
  * Get all voters
  */
 export async function getAllVoters(): Promise<ApiVoter[]> {
@@ -173,6 +197,70 @@ export async function getVoterVotingStatus(voterId: string) {
     return await response.json();
   } catch (error) {
     console.error('Error fetching voting status:', error);
+    throw error;
+  }
+}
+
+export interface ManualVerifyParams {
+  voterId: string;
+  idType: string;
+  idNumber: string;
+  reason: string;
+  officerId: string;
+}
+
+export interface DigitalVerifyParams {
+  voterId: string;
+  idType: string;
+  idNumber: string;
+}
+
+/**
+ * Generate token via digital verification
+ */
+export async function digitalVerify(params: DigitalVerifyParams) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/verification/digital`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Digital verification failed: ${errorText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error in digitalVerify:', error);
+    throw error;
+  }
+}
+
+/**
+ * Generate token via manual verification
+ */
+export async function manualVerify(params: ManualVerifyParams) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/verification/manual`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Manual verification failed: ${errorText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error in manualVerify:', error);
     throw error;
   }
 }
@@ -289,6 +377,37 @@ export async function faceMatch(voterId: string, liveImage: string) {
     return data;
   } catch (error) {
     console.error('Error in faceMatch:', error);
+    throw error;
+  }
+}
+
+/**
+ * Scan Base64 encoded QR code to identify/verify voter
+ */
+export async function scanQr(qrString: string) {
+  try {
+    const url = `${API_BASE_URL}/verification/scan-qr`;
+    console.log(`🔍 Initiating scanQr...`);
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ qrString }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Scan QR error:', errorText);
+      throw new Error(`QR scanning failed: ${response.status} - ${errorText}`);
+    }
+
+    const voter = await response.json();
+    console.log('✅ Scan QR result:', voter);
+    return normalizeVoter(voter);
+  } catch (error) {
+    console.error('Error in scanQr:', error);
     throw error;
   }
 }

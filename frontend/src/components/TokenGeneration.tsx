@@ -7,11 +7,12 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
   token: string;
+  voterId: string;
   isManual: boolean;
   onProceedToVote: () => void;
 }
 
-export function TokenGeneration({ token, isManual, onProceedToVote }: Props) {
+export function TokenGeneration({ token, voterId, isManual, onProceedToVote }: Props) {
   const { t } = useLanguage();
   const [timeLeft, setTimeLeft] = useState(180);
   const [expired, setExpired] = useState(false);
@@ -43,6 +44,10 @@ export function TokenGeneration({ token, isManual, onProceedToVote }: Props) {
         <div className="text-center">
           <div className="inline-block px-8 py-4 bg-muted rounded-xl border-2 border-dashed border-primary/30">
             <p className="text-4xl font-mono font-bold tracking-[0.3em] text-primary">{token}</p>
+          </div>
+          <div className="mt-4 space-y-1">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">{t('voterId')}</p>
+            <p className="text-lg font-mono font-bold text-foreground">{voterId}</p>
           </div>
           {isManual && (
             <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-warning/10 text-warning text-xs font-medium rounded-full">

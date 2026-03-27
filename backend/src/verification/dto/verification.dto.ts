@@ -67,3 +67,12 @@ export class FaceMatchResponse {
   @ApiPropertyOptional({ example: 'mock-provider-v1' })
   providerId?: string;
 }
+
+export class ScanQrDto {
+  @ApiProperty({
+    example: 'QUFESEFSfDk4NzY1NDMyMTIzNA==',
+    description: 'Base64 encoded string: TYPE|ID',
+  })
+  @IsString()
+  qrString: string;
+}

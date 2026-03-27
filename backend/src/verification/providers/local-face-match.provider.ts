@@ -6,7 +6,8 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { pathToFileURL } from 'url';
 import { existsSync } from 'fs';
-import { Human, Config } from '@vladmandic/human';
+import '@tensorflow/tfjs-backend-wasm';
+import { Human, Config } from '@vladmandic/human/dist/human.node-wasm.js';
 import * as jpeg from 'jpeg-js';
 import { PNG } from 'pngjs';
 
@@ -22,6 +23,7 @@ export class LocalFaceMatchProvider extends FaceMatchProvider implements OnModul
       // Point human to models via CDN because pure JS fallback relies on node fetch which rejects file:// protocols
       modelBasePath: 'https://vladmandic.github.io/human-models/models/',
       backend: 'wasm', // Fallback from tfjs-node for Windows compatibility
+      wasmPath: join(process.cwd(), 'node_modules', '@tensorflow', 'tfjs-backend-wasm', 'dist', '/'), // Ensure TFJS loads the local module binaries
       debug: false,
       face: {
         enabled: true,
@@ -62,6 +64,10 @@ export class LocalFaceMatchProvider extends FaceMatchProvider implements OnModul
     this.logger.log('Initializing Local Face Recognition Models...');
     try {
       this.human.env.node = true;
+      
+      this.logger.log('Initializing backend engines...');
+      await this.human.init(); // Fully initializes backends
+      await this.human.tf.ready(); // Make sure the selected backend runtime is fully ready
       
       await this.human.load();
       this.logger.log('Local models loaded successfully.');
@@ -195,6 +201,7 @@ export class LocalFaceMatchProvider extends FaceMatchProvider implements OnModul
         rgbData[i * 3 + 2] = data[i * 4 + 2];
     }
     
+    await this.human.tf.ready();
     return this.human.tf.tensor3d(rgbData, [height, width, 3], 'int32');
   }
 }

@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TokensService } from '../tokens/tokens.service';
 import { AuditService } from '../audit/audit.service';
 import { FaceMatchProvider } from './providers/face-match.provider';
+import { decodeQr } from './utils/qr-utils';
 
 @Injectable()
 export class VerificationService {
@@ -131,5 +132,63 @@ export class VerificationService {
       console.error('[ERROR] VerificationService.faceMatch failed:', error);
       throw error;
     }
+  }
+
+  /**
+   * QR Scanning Flow
+   * - Decodes Base64 QR
+   * - Searches by Aadhaar, PAN, or Voter ID
+   * - Returns simplified user profile
+   */
+  async scanQr(qrString: string) {
+    let type: string, id: string;
+    
+    try {
+      ({ type, id } = decodeQr(qrString));
+    } catch (e) {
+      throw new BadRequestException(e.message);
+    }
+
+    let voter: any = null;
+
+    if (type === 'AADHAR') {
+      voter = await this.prisma.voter.findFirst({
+        where: {
+          documents: {
+            some: {
+              documentNumber: id,
+              documentType: { name: 'Aadhaar Card' }
+            }
+          }
+        } as any
+      });
+    } else if (type === 'PAN') {
+      voter = await this.prisma.voter.findFirst({
+        where: {
+          documents: {
+            some: {
+              documentNumber: id,
+              documentType: { name: 'PAN Card' }
+            }
+          }
+        } as any
+      });
+    } else if (type === 'VOTER') {
+      voter = await this.prisma.voter.findUnique({ where: { id } });
+    } else {
+      throw new BadRequestException(`Unsupported identity type: ${type}`);
+    }
+
+    if (!voter) {
+      throw new NotFoundException(`User not found with ${type}: ${id}`);
+    }
+
+    return {
+      id: voter.id,
+      name: voter.name,
+      photoUrl: voter.photoUrl,
+      documentType: type,
+      documentNumber: id
+    };
   }
 }

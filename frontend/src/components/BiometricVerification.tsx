@@ -6,12 +6,14 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { faceMatch } from '@/lib/api';
 import { toast } from 'sonner';
+import { ScannedIDCard } from './ScannedIDCard';
 
 const MAX_FINGERPRINT_ATTEMPTS = 5;
 const MAX_FACIAL_ATTEMPTS = 5;
 
 interface Props {
   voterId: string | null;
+  voterInfo: { id: string, name: string, documentType: string } | null | undefined;
   onSuccess: () => void;
   onFail: () => void;
   onSwitchManual: () => void;
@@ -42,7 +44,7 @@ function playAlarmBeep() {
   }
 }
 
-export function BiometricVerification({ voterId, onSuccess, onFail, onSwitchManual }: Props) {
+export function BiometricVerification({ voterId, voterInfo, onSuccess, onFail, onSwitchManual }: Props) {
   const { t } = useLanguage();
   const [scanning, setScanning] = useState(false);
   const [fingerprintResult, setFingerprintResult] = useState<BiometricResult>({ status: 'idle', completed: false });
@@ -171,7 +173,7 @@ export function BiometricVerification({ voterId, onSuccess, onFail, onSwitchManu
               <AlertTriangle className="w-5 h-5 text-destructive" />
             </div>
             <div>
-              <CardTitle className="text-lg text-destructive">{t('stage2Title')}</CardTitle>
+              <CardTitle className="text-lg text-destructive font-bold">{t('biometricVerification')}</CardTitle>
               <CardDescription>{t('stage2Desc')}</CardDescription>
             </div>
           </div>
@@ -199,10 +201,11 @@ export function BiometricVerification({ voterId, onSuccess, onFail, onSwitchManu
             <Fingerprint className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <CardTitle className="text-lg">{t('stage2Title')}</CardTitle>
+            <CardTitle className="text-lg font-bold">{t('biometricVerification')}</CardTitle>
             <CardDescription>{t('stage2Desc')}</CardDescription>
           </div>
         </div>
+
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Biometric Progress Steps */}

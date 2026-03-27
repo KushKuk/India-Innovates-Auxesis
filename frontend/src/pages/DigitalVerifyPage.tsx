@@ -8,9 +8,11 @@ import { SharedHeader } from '@/components/SharedHeader';
 import { TerminalNav } from '@/components/TerminalNav';
 import { AuditLog } from '@/components/AuditLog';
 import { LanguageSelection } from '@/components/LanguageSelection';
+import { ScannedIDCard } from '@/components/ScannedIDCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLanguageSelection } from '@/contexts/LanguageSelectionContext';
 import { useVoterDB } from '@/contexts/VoterContext';
+import { updateVoterStatusInBackend } from '@/lib/api';
 import type { StageStatus } from '@/types/verification';
 
 const generateToken = () => Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -26,6 +28,7 @@ export default function DigitalVerifyPage() {
   const [tokenGenerated, setTokenGenerated] = useState(false);
   const [generatedToken, setGeneratedToken] = useState('');
   const [currentVoterId, setCurrentVoterId] = useState('');
+  const [scannedVoter, setScannedVoter] = useState<any>(null);
 
   const terminalAudit = auditLog.filter(e => e.terminal === 'digital');
 
@@ -33,11 +36,12 @@ export default function DigitalVerifyPage() {
     setStages(prev => ({ ...prev, [stage]: status }));
   }, []);
 
-  const handleIdSuccess = useCallback((voterId: string) => {
+  const handleIdSuccess = useCallback((voterId: string, voterInfo?: any) => {
     updateStage('identity', 'success');
     updateStage('biometric', 'active');
     setCurrentStage(1);
     setCurrentVoterId(voterId);
+    setScannedVoter(voterInfo || null);
     addAuditEntry({ terminal: 'digital', action: 'ID verified', status: 'success', details: `Identity confirmed (Voter: ${voterId})` });
   }, [updateStage, addAuditEntry]);
 
@@ -46,7 +50,7 @@ export default function DigitalVerifyPage() {
     addAuditEntry({ terminal: 'digital', action: 'ID verification failed', status: 'error' });
   }, [updateStage, addAuditEntry]);
 
-  const handleBiometricSuccess = useCallback(() => {
+  const handleBiometricSuccess = useCallback(async () => {
     updateStage('biometric', 'success');
     const token = generateToken();
     setGeneratedToken(token);
@@ -55,15 +59,25 @@ export default function DigitalVerifyPage() {
 
     const voterId = currentVoterId || 'VOT001'; 
     setCurrentVoterId(voterId);
+
+    // Sync with backend
+    try {
+      if (scannedVoter?.id) {
+        await updateVoterStatusInBackend(scannedVoter.id, 'TOKEN_ACTIVE');
+      }
+    } catch (e) {
+      console.error('Backend sync failed:', e);
+    }
     
     addVoter({
-      name: voterId === 'VOT001' ? 'Kushaagra Goel' : voterId === 'VOT002' ? 'Pranav Shukla' : 'Digital Voter',
-      voterId,
-      idType: 'aadhaar',
-      idNumber: '****',
+      id: scannedVoter?.id,
+      name: scannedVoter?.name || 'Voter',
+      voterId: voterId,
+      idType: scannedVoter?.documentType || 'id',
+      idNumber: scannedVoter?.documentNumber || voterId,
       token,
       tokenGeneratedAt: new Date(),
-      tokenExpiresAt: new Date(Date.now() + 3 * 60 * 1000),
+      tokenExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
       verificationMode: 'digital',
       votingStatus: 'TOKEN_ACTIVE',
       hasVoted: false,
@@ -82,6 +96,7 @@ export default function DigitalVerifyPage() {
     setTokenGenerated(false);
     setGeneratedToken('');
     setCurrentVoterId('');
+    setScannedVoter(null);
     setLanguageSelected(false);
     addAuditEntry({ terminal: 'digital', action: 'Session reset', status: 'info' });
   }, [setLanguageSelected, addAuditEntry]);
@@ -104,13 +119,19 @@ export default function DigitalVerifyPage() {
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">{t('currentStage')}</p>
                 <p className="text-sm font-semibold text-foreground">
-                  {tokenGenerated ? t('tokenGenerated') : [t('aadhaarVerification'), t('biometricVerification')][currentStage]}
+                  {tokenGenerated ? t('tokenGenerated') : [t('identityVerification'), t('biometricVerification')][currentStage]}
                 </p>
               </div>
               <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
                 {lang === 'hi' ? 'डिजिटल टर्मिनल' : 'Digital Terminal'}
               </span>
             </div>
+
+            {scannedVoter && !tokenGenerated && (
+              <div className="mb-6">
+                <ScannedIDCard voter={scannedVoter} />
+              </div>
+            )}
 
             {!tokenGenerated && (
               <div className="bg-card border border-border rounded-lg p-4">
@@ -142,8 +163,14 @@ export default function DigitalVerifyPage() {
                 {currentStage === 0 && (
                   <AadhaarVerification onSuccess={handleIdSuccess} onFail={handleIdFail} onSwitchManual={() => {}} />
                 )}
-                {currentStage === 1 && (
-                  <BiometricVerification voterId={currentVoterId} onSuccess={handleBiometricSuccess} onFail={handleBiometricFail} onSwitchManual={() => {}} />
+                 {currentStage === 1 && (
+                  <BiometricVerification 
+                    voterId={currentVoterId} 
+                    voterInfo={scannedVoter}
+                    onSuccess={handleBiometricSuccess} 
+                    onFail={handleBiometricFail} 
+                    onSwitchManual={() => {}} 
+                  />
                 )}
               </>
             )}

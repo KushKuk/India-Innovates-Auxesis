@@ -26,10 +26,12 @@ export interface AuditEntry {
   voterId?: string;
 }
 
+export type VoterInput = Omit<VoterRecord, 'id'> & { id?: string };
+
 interface VoterContextType {
   voters: VoterRecord[];
   auditLog: AuditEntry[];
-  addVoter: (voter: Omit<VoterRecord, 'id'>) => void;
+  addVoter: (voter: VoterInput) => void;
   getActiveToken: (voterId: string) => VoterRecord | undefined;
   updateVotingStatus: (voterId: string, status: VotingStatus) => void;
   addAuditEntry: (entry: Omit<AuditEntry, 'id' | 'timestamp'>) => void;
@@ -46,11 +48,14 @@ export function VoterProvider({ children }: { children: ReactNode }) {
     setAuditLog(prev => [...prev, { ...entry, id: crypto.randomUUID(), timestamp: new Date() }]);
   }, []);
 
-  const addVoter = useCallback((voter: Omit<VoterRecord, 'id'>) => {
+  const addVoter = useCallback((voter: VoterInput) => {
     setVoters(prev => {
       // Remove any existing record for this voter (re-verification)
       const filtered = prev.filter(v => v.voterId !== voter.voterId);
-      return [...filtered, { ...voter, id: crypto.randomUUID() }];
+      return [...filtered, { 
+        ...voter, 
+        id: voter.id || crypto.randomUUID() 
+      }];
     });
   }, []);
 
