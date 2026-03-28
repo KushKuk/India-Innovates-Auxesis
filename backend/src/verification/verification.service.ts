@@ -141,54 +141,64 @@ export class VerificationService {
    * - Returns simplified user profile
    */
   async scanQr(qrString: string) {
-    let type: string, id: string;
-    
     try {
-      ({ type, id } = decodeQr(qrString));
-    } catch (e) {
-      throw new BadRequestException(e.message);
-    }
+      let type: string, id: string;
+      
+      try {
+        ({ type, id } = decodeQr(qrString));
+      } catch (e) {
+        throw new BadRequestException(e.message);
+      }
 
-    let voter: any = null;
+      let voter: any = null;
 
-    if (type === 'AADHAR') {
-      voter = await this.prisma.voter.findFirst({
-        where: {
-          documents: {
-            some: {
-              documentNumber: id,
-              documentType: { name: 'Aadhaar Card' }
+      if (type === 'AADHAR') {
+        voter = await (this.prisma.voter as any).findFirst({
+          where: {
+            documents: {
+              some: {
+                documentNumber: id,
+                documentTypeName: { contains: 'Aadhaar' }
+              }
             }
           }
-        } as any
-      });
-    } else if (type === 'PAN') {
-      voter = await this.prisma.voter.findFirst({
-        where: {
-          documents: {
-            some: {
-              documentNumber: id,
-              documentType: { name: 'PAN Card' }
+        });
+      } else if (type === 'PAN') {
+        voter = await (this.prisma.voter as any).findFirst({
+          where: {
+            documents: {
+              some: {
+                documentNumber: id,
+                documentTypeName: { contains: 'PAN' }
+              }
             }
           }
-        } as any
-      });
-    } else if (type === 'VOTER') {
-      voter = await this.prisma.voter.findUnique({ where: { id } });
-    } else {
-      throw new BadRequestException(`Unsupported identity type: ${type}`);
-    }
+        });
+      } else if (type === 'VOTER') {
+        voter = await this.prisma.voter.findUnique({ where: { id } });
+      } else {
+        throw new BadRequestException(`Unsupported identity type: ${type}`);
+      }
 
-    if (!voter) {
-      throw new NotFoundException(`User not found with ${type}: ${id}`);
-    }
+      if (!voter) {
+        throw new NotFoundException(`User not found with ${type}: ${id}`);
+      }
 
-    return {
-      id: voter.id,
-      name: voter.name,
-      photoUrl: voter.photoUrl,
-      documentType: type,
-      documentNumber: id
-    };
+      return {
+        id: voter.id,
+        name: voter.name,
+        photoUrl: voter.photoUrl,
+        documentType: type,
+        documentNumber: id
+      };
+    } catch (error: any) {
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+        throw error;
+      }
+      const fs = require('fs');
+      const errorMsg = `[${new Date().toISOString()}] ScanQr Error:\n${error.message}\n${error.stack}\n\n`;
+      fs.appendFileSync('debug_error.txt', errorMsg);
+      throw error;
+    }
   }
 }

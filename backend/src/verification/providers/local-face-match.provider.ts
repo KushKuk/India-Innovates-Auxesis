@@ -27,15 +27,15 @@ export class LocalFaceMatchProvider extends FaceMatchProvider implements OnModul
       debug: false,
       face: {
         enabled: true,
-        detector: { 
-          rotation: true, 
+        detector: {
+          rotation: true,
           return: true,
           minConfidence: 0.6, // Higher confidence requirement
           maxDetected: 1
         },
         mesh: { enabled: true },
         iris: { enabled: true },
-        description: { 
+        description: {
           enabled: true,
           // modelPath is usually handled by Human.load(), but we can't easily switch model names via CDN easily.
           // Instead we'll increase internal quality.
@@ -64,11 +64,11 @@ export class LocalFaceMatchProvider extends FaceMatchProvider implements OnModul
     this.logger.log('Initializing Local Face Recognition Models...');
     try {
       this.human.env.node = true;
-      
+
       this.logger.log('Initializing backend engines...');
       await this.human.init(); // Fully initializes backends
       await this.human.tf.ready(); // Make sure the selected backend runtime is fully ready
-      
+
       await this.human.load();
       this.logger.log('Local models loaded successfully.');
     } catch (err) {
@@ -106,14 +106,14 @@ export class LocalFaceMatchProvider extends FaceMatchProvider implements OnModul
       if (!existsSync(refPath)) {
         return { matchStatus: 'ERROR', confidenceScore: 0, reason: `Reference image file not found: ${voter.photoUrl}`, providerId: 'local-face-matcher' };
       }
-      
+
       const referenceImageBuffer = await readFile(refPath);
 
       // 3. Decode Images
       this.logger.log('Step 1: Decoding images...');
       try {
         refTensor = this.human.tf.node ? this.human.tf.node.decodeImage(referenceImageBuffer) : await this.decodeImageFallback(referenceImageBuffer);
-        
+
         const liveImageBuffer = Buffer.from(liveImageBase64.replace(/^data:image\/\w+;base64,/, ""), "base64");
         liveTensor = this.human.tf.node ? this.human.tf.node.decodeImage(liveImageBuffer) : await this.decodeImageFallback(liveImageBuffer);
       } catch (e) {
@@ -124,7 +124,7 @@ export class LocalFaceMatchProvider extends FaceMatchProvider implements OnModul
       // 4. Run Analysis SEQUENTIALLY to keep peak memory low
       this.logger.log('Step 2a: Detecting face in REFERENCE (heavy)...');
       const refRes = await this.human.detect(refTensor);
-      
+
       this.logger.log('Step 2b: Detecting face in LIVE (heavy)...');
       const liveRes = await this.human.detect(liveTensor);
 
@@ -136,7 +136,7 @@ export class LocalFaceMatchProvider extends FaceMatchProvider implements OnModul
 
       const refFace = refRes.face[0];
       const liveFace = liveRes.face[0];
-      
+
       this.logger.log(`>> Similarity check: Ref Quality: ${refFace.score.toFixed(2)}, Live Quality: ${liveFace.score.toFixed(2)}`);
 
       if (liveFace.score < 0.6) { // Slightly lower threshold for stability
@@ -148,10 +148,10 @@ export class LocalFaceMatchProvider extends FaceMatchProvider implements OnModul
       }
 
       const similarity = this.human.match.similarity(liveFace.embedding, refFace.embedding);
-      const threshold = 0.55; 
-      
+      const threshold = 0.50;
+
       this.logger.log(`>> BIOMETRICS: Similarity: ${(similarity * 100).toFixed(1)}% | Threshold: ${threshold * 100}%`);
-      
+
       if (similarity > threshold) {
         return { matchStatus: 'MATCH', confidenceScore: similarity, reason: `Identified (${(similarity * 100).toFixed(1)}%)`, providerId: 'local-face-matcher' };
       } else {
@@ -189,18 +189,18 @@ export class LocalFaceMatchProvider extends FaceMatchProvider implements OnModul
     } else {
       throw new Error("Unsupported image format. Only JPEG and PNG are supported.");
     }
-    
+
     // Human expects an RGB tensor tensor3d. 
     // We'll normalize to Float32 [0, 1] to ensure the AI gets the cleanest possible signal
     const numPixels = width * height;
     const rgbData = new Int32Array(numPixels * 3);
-    
+
     for (let i = 0; i < numPixels; i++) {
-        rgbData[i * 3 + 0] = data[i * 4 + 0]; 
-        rgbData[i * 3 + 1] = data[i * 4 + 1];
-        rgbData[i * 3 + 2] = data[i * 4 + 2];
+      rgbData[i * 3 + 0] = data[i * 4 + 0];
+      rgbData[i * 3 + 1] = data[i * 4 + 1];
+      rgbData[i * 3 + 2] = data[i * 4 + 2];
     }
-    
+
     await this.human.tf.ready();
     return this.human.tf.tensor3d(rgbData, [height, width, 3], 'int32');
   }
