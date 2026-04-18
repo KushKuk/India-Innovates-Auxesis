@@ -1,7 +1,17 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { EncryptionService } from '../src/common/encryption/encryption.service';
+import { encryptionExtension } from '../src/prisma/extensions/encryption.extension';
+import { ConfigService } from '@nestjs/config';
+import * as dotenv from 'dotenv';
 
-const prisma = new PrismaClient();
+dotenv.config();
+
+// Standard standalone script workaround for EncryptionService
+const configService = new ConfigService(process.env);
+const encryptionService = new EncryptionService(configService);
+const rawPrisma = new PrismaClient();
+const prisma = rawPrisma.$extends(encryptionExtension(encryptionService));
 
 async function main() {
   console.log('🌱 Seeding database...');
@@ -76,6 +86,18 @@ async function main() {
       faceVerificationEnabled: true,
       hasVoted: false 
     },
+    { 
+      id: 'FHSKT59831A', 
+      name: 'Test Voter (Physical QR)', 
+      dob: '2000-01-01', 
+      age: 24, 
+      gender: 'Male',
+      address: 'Test Address for Physical QR Scan', 
+      photoUrl: 'uploads/voters/satyam-tiwari.png', // Using existing photo for demo
+      photoVerifiedAt: new Date(),
+      faceVerificationEnabled: true,
+      hasVoted: false 
+    },
   ];
 
   for (const voter of voters) {
@@ -99,6 +121,13 @@ async function main() {
     update: {},
     create: { name: 'PAN Card' },
   });
+
+  const voterIdType = await prisma.documentType.upsert({
+    where: { name: 'Voter ID Card' },
+    update: {},
+    create: { name: 'Voter ID Card' },
+  });
+
   console.log('  ✅ Document Types seeded');
 
   // Seed Voter Documents for Satyam
@@ -112,6 +141,21 @@ async function main() {
       documentTypeId: aadharType.id,
       documentNumber: '801271369901',
       nameOnDocument: 'Satyam Tiwari',
+      verificationStatus: 'VERIFIED'
+    },
+  });
+
+  // Also seed a document for the physical test QR
+  await prisma.voterDocument.upsert({
+    where: { 
+      voterId_documentTypeId: { voterId: 'FHSKT59831A', documentTypeId: voterIdType.id }
+    },
+    update: { documentNumber: 'FHSKT59831A', nameOnDocument: 'Test Voter' },
+    create: { 
+      voterId: 'FHSKT59831A',
+      documentTypeId: voterIdType.id,
+      documentNumber: 'FHSKT59831A',
+      nameOnDocument: 'Test Voter',
       verificationStatus: 'VERIFIED'
     },
   });

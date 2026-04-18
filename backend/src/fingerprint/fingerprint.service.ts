@@ -48,7 +48,7 @@ export class FingerprintService {
     const sessionId = uuidv4();
 
     // Validate voter exists
-    const voter = await this.prisma.voter.findUnique({
+    const voter = await this.prisma.client.voter.findUnique({
       where: { id: dto.voterId },
     });
     if (!voter) {
@@ -79,7 +79,7 @@ export class FingerprintService {
     const encKey = this.config.getOrThrow<string>('FINGERPRINT_ENCRYPTION_KEY');
     const { ciphertext, iv } = encryptTemplate(extracted.template, encKey);
 
-    const stored = await this.prisma.fingerprintTemplate.create({
+    const stored = await this.prisma.client.fingerprintTemplate.create({
       data: {
         voterId: dto.voterId,
         fingerLabel: dto.fingerLabel,
@@ -175,7 +175,7 @@ export class FingerprintService {
     }
 
     // ── Step 3: Load all active enrolled templates ────────────────────────
-    const enrolledRecords = await this.prisma.fingerprintTemplate.findMany({
+    const enrolledRecords = await this.prisma.client.fingerprintTemplate.findMany({
       where: { voterId: dto.voterId, fingerLabel: dto.fingerLabel, active: true },
     });
 

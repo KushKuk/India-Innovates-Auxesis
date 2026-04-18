@@ -1,9 +1,10 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, HttpException, InternalServerErrorException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TokensService } from '../tokens/tokens.service';
 import { AuditService } from '../audit/audit.service';
 import { FaceMatchProvider } from './providers/face-match.provider';
 import { decodeQr } from './utils/qr-utils';
+import { EncryptionService } from '../common/encryption/encryption.service';
 
 @Injectable()
 export class VerificationService {
@@ -12,6 +13,7 @@ export class VerificationService {
     private tokensService: TokensService,
     private auditService: AuditService,
     private faceMatchProvider: FaceMatchProvider,
+    private encryptionService: EncryptionService, // Inject EncryptionService
   ) {}
 
   /**
@@ -152,36 +154,45 @@ export class VerificationService {
 
       let voter: any = null;
 
-      if (type === 'AADHAR') {
-        voter = await (this.prisma.voter as any).findFirst({
+      if (type === 'AADHAR' || type === 'PAN') {
+        const idHash = this.encryptionService.generateBlindIndex(id);
+        const searchDocType = type === 'AADHAR' ? 'AADHAR' : 'PAN';
+
+        voter = await this.prisma.client.voter.findFirst({
           where: {
             documents: {
               some: {
-                documentNumber: id,
-                documentTypeName: { contains: 'Aadhaar' }
-              }
-            }
-          }
-        });
-      } else if (type === 'PAN') {
-        voter = await (this.prisma.voter as any).findFirst({
-          where: {
-            documents: {
-              some: {
-                documentNumber: id,
-                documentTypeName: { contains: 'PAN' }
+                documentNumberHash: idHash,
+                documentTypeName: { contains: searchDocType }
               }
             }
           }
         });
       } else if (type === 'VOTER') {
-        voter = await this.prisma.voter.findUnique({ where: { id } });
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+        if (isUuid) {
+          voter = await this.prisma.client.voter.findUnique({ where: { id } });
+        }
+        if (!voter) {
+          // Search by document number (EPIC ID) using Blind Index
+          const idHash = this.encryptionService.generateBlindIndex(id);
+          voter = await this.prisma.client.voter.findFirst({
+            where: {
+              documents: {
+                some: {
+                  documentNumberHash: idHash,
+                  documentTypeName: { contains: 'Voter' }
+                }
+              }
+            }
+          });
+        }
       } else {
         throw new BadRequestException(`Unsupported identity type: ${type}`);
       }
 
       if (!voter) {
-        throw new NotFoundException(`User not found with ${type}: ${id}`);
+        throw new NotFoundException(`Voter not found with ID: ${id}`);
       }
 
       return {
@@ -189,16 +200,12 @@ export class VerificationService {
         name: voter.name,
         photoUrl: voter.photoUrl,
         documentType: type,
-        documentNumber: id
+        status: voter.votingStatus,
+        hasVoted: voter.hasVoted,
       };
-    } catch (error: any) {
-      if (error instanceof BadRequestException || error instanceof NotFoundException) {
-        throw error;
-      }
-      const fs = require('fs');
-      const errorMsg = `[${new Date().toISOString()}] ScanQr Error:\n${error.message}\n${error.stack}\n\n`;
-      fs.appendFileSync('debug_error.txt', errorMsg);
-      throw error;
+    } catch (e) {
+      if (e instanceof HttpException) throw e;
+      throw new InternalServerErrorException(e.message);
     }
   }
 }

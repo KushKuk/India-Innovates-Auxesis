@@ -40,3 +40,171 @@ NotFoundException: Voter not found in electoral roll
     at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-execution-context.js:46:28
     at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-proxy.js:9:17
 
+[2026-04-18T10:43:30.084Z] ScanQr Error:
+
+Invalid `this.prisma.client.voter.findFirst()` invocation in
+C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:171:48
+
+  168   });
+  169 } else if (type === 'PAN') {
+  170   const idHash = this.encryptionService.generateBlindIndex(id);
+→ 171   voter = await this.prisma.client.voter.findFirst(
+
+PrismaClientKnownRequestError: 
+Invalid `this.prisma.client.voter.findFirst()` invocation in
+C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:171:48
+
+  168   });
+  169 } else if (type === 'PAN') {
+  170   const idHash = this.encryptionService.generateBlindIndex(id);
+→ 171   voter = await this.prisma.client.voter.findFirst(
+
+    at ei.handleRequestError (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+    at ei.handleAndLogRequestError (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at ei.request (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at async Array.$allOperations (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\prisma\extensions\encryption.extension.ts:94:26)
+    at async a (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+    at async VerificationService.scanQr (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:171:17)
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-04-18T10:49:21.993Z] ScanQr Error:
+
+Invalid `this.prisma.client.voter.findFirst()` invocation in
+C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:171:48
+
+  168   });
+  169 } else if (type === 'PAN') {
+  170   const idHash = this.encryptionService.generateBlindIndex(id);
+→ 171   voter = await this.prisma.client.voter.findFirst(
+
+PrismaClientKnownRequestError: 
+Invalid `this.prisma.client.voter.findFirst()` invocation in
+C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:171:48
+
+  168   });
+  169 } else if (type === 'PAN') {
+  170   const idHash = this.encryptionService.generateBlindIndex(id);
+→ 171   voter = await this.prisma.client.voter.findFirst(
+
+    at ei.handleRequestError (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+    at ei.handleAndLogRequestError (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at ei.request (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at async Array.$allOperations (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\prisma\extensions\encryption.extension.ts:94:26)
+    at async a (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+    at async VerificationService.scanQr (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:171:17)
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-04-18T10:49:23.278Z] ScanQr Error:
+
+Invalid `this.prisma.client.voter.findFirst()` invocation in
+C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:171:48
+
+  168   });
+  169 } else if (type === 'PAN') {
+  170   const idHash = this.encryptionService.generateBlindIndex(id);
+→ 171   voter = await this.prisma.client.voter.findFirst(
+
+PrismaClientKnownRequestError: 
+Invalid `this.prisma.client.voter.findFirst()` invocation in
+C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:171:48
+
+  168   });
+  169 } else if (type === 'PAN') {
+  170   const idHash = this.encryptionService.generateBlindIndex(id);
+→ 171   voter = await this.prisma.client.voter.findFirst(
+
+    at ei.handleRequestError (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+    at ei.handleAndLogRequestError (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at ei.request (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at async Array.$allOperations (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\prisma\extensions\encryption.extension.ts:94:26)
+    at async a (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+    at async VerificationService.scanQr (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:171:17)
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-04-18T10:49:23.759Z] ScanQr Error:
+
+Invalid `this.prisma.client.voter.findFirst()` invocation in
+C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:171:48
+
+  168   });
+  169 } else if (type === 'PAN') {
+  170   const idHash = this.encryptionService.generateBlindIndex(id);
+→ 171   voter = await this.prisma.client.voter.findFirst(
+
+PrismaClientKnownRequestError: 
+Invalid `this.prisma.client.voter.findFirst()` invocation in
+C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:171:48
+
+  168   });
+  169 } else if (type === 'PAN') {
+  170   const idHash = this.encryptionService.generateBlindIndex(id);
+→ 171   voter = await this.prisma.client.voter.findFirst(
+
+    at ei.handleRequestError (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+    at ei.handleAndLogRequestError (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at ei.request (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at async Array.$allOperations (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\prisma\extensions\encryption.extension.ts:94:26)
+    at async a (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+    at async VerificationService.scanQr (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:171:17)
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-04-18T10:56:29.369Z] ScanQr Error:
+
+Invalid `this.prisma.client.voter.findFirst()` invocation in
+C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:171:48
+
+  168   });
+  169 } else if (type === 'PAN') {
+  170   const idHash = this.encryptionService.generateBlindIndex(id);
+→ 171   voter = await this.prisma.client.voter.findFirst(
+
+PrismaClientKnownRequestError: 
+Invalid `this.prisma.client.voter.findFirst()` invocation in
+C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:171:48
+
+  168   });
+  169 } else if (type === 'PAN') {
+  170   const idHash = this.encryptionService.generateBlindIndex(id);
+→ 171   voter = await this.prisma.client.voter.findFirst(
+
+    at ei.handleRequestError (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+    at ei.handleAndLogRequestError (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at ei.request (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at async Array.$allOperations (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\prisma\extensions\encryption.extension.ts:94:26)
+    at async a (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+    at async VerificationService.scanQr (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:171:17)
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-04-18T10:56:30.112Z] ScanQr Error:
+
+Invalid `this.prisma.client.voter.findFirst()` invocation in
+C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:171:48
+
+  168   });
+  169 } else if (type === 'PAN') {
+  170   const idHash = this.encryptionService.generateBlindIndex(id);
+→ 171   voter = await this.prisma.client.voter.findFirst(
+
+PrismaClientKnownRequestError: 
+Invalid `this.prisma.client.voter.findFirst()` invocation in
+C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:171:48
+
+  168   });
+  169 } else if (type === 'PAN') {
+  170   const idHash = this.encryptionService.generateBlindIndex(id);
+→ 171   voter = await this.prisma.client.voter.findFirst(
+
+    at ei.handleRequestError (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+    at ei.handleAndLogRequestError (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at ei.request (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at async Array.$allOperations (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\prisma\extensions\encryption.extension.ts:94:26)
+    at async a (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+    at async VerificationService.scanQr (C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\src\verification\verification.service.ts:171:17)
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\node_modules\@nestjs\core\router\router-proxy.js:9:17
+

@@ -2,77 +2,35 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { FaceMatchProvider } from './face-match.provider';
 import { FaceMatchResponse } from '../dto/verification.dto';
 import { PrismaService } from '../../prisma/prisma.service';
-import { readFile } from 'fs/promises';
 import { join } from 'path';
-import { pathToFileURL } from 'url';
-import { existsSync } from 'fs';
-import '@tensorflow/tfjs-backend-wasm';
-import { Human, Config } from '@vladmandic/human/dist/human.node-wasm.js';
-import * as jpeg from 'jpeg-js';
-import { PNG } from 'pngjs';
 
+/**
+ * LocalFaceMatchProvider
+ * Migrated to use Python Face Bridge (ArcFace/InsightFace) for high accuracy
+ * and Raspberry Pi 5 optimized inference.
+ */
 @Injectable()
 export class LocalFaceMatchProvider extends FaceMatchProvider implements OnModuleInit {
   private readonly logger = new Logger(LocalFaceMatchProvider.name);
-  private human: Human;
+  private readonly bridgeUrl = 'http://localhost:8000';
 
   constructor(private prisma: PrismaService) {
     super();
-    // Initialize human configuration
-    const config: Partial<Config> = {
-      // Point human to models via CDN because pure JS fallback relies on node fetch which rejects file:// protocols
-      modelBasePath: 'https://vladmandic.github.io/human-models/models/',
-      backend: 'wasm', // Fallback from tfjs-node for Windows compatibility
-      wasmPath: join(process.cwd(), 'node_modules', '@tensorflow', 'tfjs-backend-wasm', 'dist', '/'), // Ensure TFJS loads the local module binaries
-      debug: false,
-      face: {
-        enabled: true,
-        detector: {
-          rotation: true,
-          return: true,
-          minConfidence: 0.6, // Higher confidence requirement
-          maxDetected: 1
-        },
-        mesh: { enabled: true },
-        iris: { enabled: true },
-        description: {
-          enabled: true,
-          // modelPath is usually handled by Human.load(), but we can't easily switch model names via CDN easily.
-          // Instead we'll increase internal quality.
-        },
-        emotion: { enabled: false },
-        antispoof: { enabled: true },
-        liveness: { enabled: true }
-      },
-      // Reduce internal resolution for face processing to improve stability on WASM
-      filter: {
-        enabled: true,
-        width: 540,
-        height: 540,
-        brightness: 0.1, // Slight brightness boost to normalize dark camera feeds
-        contrast: 0.2,   // Contrast boost to make facial features more distinct
-      },
-      body: { enabled: false },
-      hand: { enabled: false },
-      object: { enabled: false },
-      segmentation: { enabled: false }
-    };
-    this.human = new Human(config);
   }
 
   async onModuleInit() {
-    this.logger.log('Initializing Local Face Recognition Models...');
+    this.logger.log('Initializing Local Face Recognition (ArcFace)...');
     try {
-      this.human.env.node = true;
-
-      this.logger.log('Initializing backend engines...');
-      await this.human.init(); // Fully initializes backends
-      await this.human.tf.ready(); // Make sure the selected backend runtime is fully ready
-
-      await this.human.load();
-      this.logger.log('Local models loaded successfully.');
+      // Check if Python bridge is online
+      const response = await fetch(`${this.bridgeUrl}/health`);
+      if (response.ok) {
+        const data = await response.json();
+        this.logger.log(`Face Bridge Online: ${data.model} (CPU Temp: ${data.cpu_temp})`);
+      } else {
+        this.logger.warn('Face Bridge connection failed. Ensure the Python service is running on port 8000.');
+      }
     } catch (err) {
-      this.logger.error(`Failed to load human models. Please ensure @vladmandic/human-models is installed. Error: ${err.message}`);
+      this.logger.error(`Face Bridge unreachable: ${err.message}. Ensure Python face-bridge is started.`);
     }
   }
 
@@ -80,129 +38,111 @@ export class LocalFaceMatchProvider extends FaceMatchProvider implements OnModul
     liveImageBase64: string,
     voterId: string,
   ): Promise<FaceMatchResponse> {
-    this.logger.log(`Performing LOCAL face match for voter: ${voterId}`);
-    let refTensor, liveTensor;
-
-    // Start a memory scope to automatically dispose intermediate tensors
-    this.human.tf.engine().startScope();
+    this.logger.log(`Performing ARCFACE match for voter: ${voterId}`);
 
     try {
-      // 1. Fetch voter reference image
+      // 1. Fetch voter biometric data
       const voter = await this.prisma.voter.findUnique({
         where: { id: voterId },
-        select: { photoUrl: true, faceVerificationEnabled: true },
-      });
+        select: { photoUrl: true, faceVerificationEnabled: true, faceEmbedding: true } as any,
+      }) as any;
 
       if (!voter || !voter.photoUrl) {
-        return { matchStatus: 'ERROR', confidenceScore: 0, reason: 'No reference image found for voter', providerId: 'local-face-matcher' };
+        return { matchStatus: 'ERROR', confidenceScore: 0, reason: 'No reference data found for voter', providerId: 'arcface-bridge' };
       }
 
       if (!voter.faceVerificationEnabled) {
-        return { matchStatus: 'MATCH', confidenceScore: 1.0, reason: 'Face verification disabled for this voter record (admin override)', providerId: 'local-face-matcher' };
+        return { matchStatus: 'MATCH', confidenceScore: 1.0, reason: 'Face verification disabled for this voter record', providerId: 'arcface-bridge' };
       }
 
-      // 2. Load Reference Image
-      const refPath = join(process.cwd(), voter.photoUrl);
-      if (!existsSync(refPath)) {
-        return { matchStatus: 'ERROR', confidenceScore: 0, reason: `Reference image file not found: ${voter.photoUrl}`, providerId: 'local-face-matcher' };
-      }
+      // 2. Prepare request for Face Bridge
+      const requestBody: any = {
+        live_image: liveImageBase64,
+      };
 
-      const referenceImageBuffer = await readFile(refPath);
-
-      // 3. Decode Images
-      this.logger.log('Step 1: Decoding images...');
-      try {
-        refTensor = this.human.tf.node ? this.human.tf.node.decodeImage(referenceImageBuffer) : await this.decodeImageFallback(referenceImageBuffer);
-
-        const liveImageBuffer = Buffer.from(liveImageBase64.replace(/^data:image\/\w+;base64,/, ""), "base64");
-        liveTensor = this.human.tf.node ? this.human.tf.node.decodeImage(liveImageBuffer) : await this.decodeImageFallback(liveImageBuffer);
-      } catch (e) {
-        this.logger.error(`Decoding failed: ${e.message}`);
-        return { matchStatus: 'ERROR', confidenceScore: 0, reason: `Failed to decode images: ${e.message}`, providerId: 'local-face-matcher' };
-      }
-
-      // 4. Run Analysis SEQUENTIALLY to keep peak memory low
-      this.logger.log('Step 2a: Detecting face in REFERENCE (heavy)...');
-      const refRes = await this.human.detect(refTensor);
-
-      this.logger.log('Step 2b: Detecting face in LIVE (heavy)...');
-      const liveRes = await this.human.detect(liveTensor);
-
-      // 5. Validate conditions
-      this.logger.log('Step 3: Comparing results...');
-      if (refRes.face.length === 0) return { matchStatus: 'ERROR', confidenceScore: 0, reason: 'No face detected in reference image', providerId: 'local-face-matcher' };
-      if (liveRes.face.length === 0) return { matchStatus: 'NO_MATCH', confidenceScore: 0, reason: 'No face detected in live image', providerId: 'local-face-matcher' };
-      if (liveRes.face.length > 1) return { matchStatus: 'ERROR', confidenceScore: 0, reason: 'Multiple faces detected. Please ensure only you are in frame.', providerId: 'local-face-matcher' };
-
-      const refFace = refRes.face[0];
-      const liveFace = liveRes.face[0];
-
-      this.logger.log(`>> Similarity check: Ref Quality: ${refFace.score.toFixed(2)}, Live Quality: ${liveFace.score.toFixed(2)}`);
-
-      if (liveFace.score < 0.6) { // Slightly lower threshold for stability
-        return { matchStatus: 'NO_MATCH', confidenceScore: 0, reason: 'Low quality face capture', providerId: 'local-face-matcher' };
-      }
-
-      if (!liveFace.embedding || !refFace.embedding) {
-        return { matchStatus: 'ERROR', confidenceScore: 0, reason: 'Biometric descriptor failed', providerId: 'local-face-matcher' };
-      }
-
-      const similarity = this.human.match.similarity(liveFace.embedding, refFace.embedding);
-      const threshold = 0.50;
-
-      this.logger.log(`>> BIOMETRICS: Similarity: ${(similarity * 100).toFixed(1)}% | Threshold: ${threshold * 100}%`);
-
-      if (similarity > threshold) {
-        return { matchStatus: 'MATCH', confidenceScore: similarity, reason: `Identified (${(similarity * 100).toFixed(1)}%)`, providerId: 'local-face-matcher' };
+      if (voter.faceEmbedding) {
+        // High-speed match using stored embedding
+        this.logger.log('Using stored embedding for fast verification...');
+        // Convert Buffer to regular array of floats for JSON
+        const buffer = voter.faceEmbedding as Buffer;
+        const floatArray = new Float32Array(
+          buffer.buffer,
+          buffer.byteOffset,
+          buffer.length / 4
+        );
+        requestBody.stored_embedding = Array.from(floatArray);
       } else {
-        return { matchStatus: 'NO_MATCH', confidenceScore: similarity, reason: `Mismatch (${(similarity * 100).toFixed(1)}%)`, providerId: 'local-face-matcher' };
+        // Fallback to path-based match (first time verify)
+        this.logger.log('No embedding found. Processing reference image from disk...');
+        requestBody.ref_image = join(process.cwd(), voter.photoUrl);
       }
+
+      // 3. Call Face Bridge
+      const start = Date.now();
+      const response = await fetch(`${this.bridgeUrl}/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Bridge returned an error');
+      }
+
+      const result = await response.json();
+      const latency = Date.now() - start;
+      this.logger.log(`Bridge Response (${latency}ms): Match=${result.match}, Confidence=${(result.confidence * 100).toFixed(1)}%`);
+
+      // 4. Persistence: If match is successful and we don't have an embedding, extract and save it
+      if (result.match && !voter.faceEmbedding) {
+        this.logger.log('Success! Extracting embedding for future use...');
+        this.saveEmbeddingInBackground(liveImageBase64, voterId);
+      }
+
+      return {
+        matchStatus: result.match ? 'MATCH' : 'NO_MATCH',
+        confidenceScore: result.confidence,
+        reason: result.match ? `Identified (${(result.confidence * 100).toFixed(1)}%)` : result.reason || 'Mismatch',
+        providerId: 'arcface-bridge'
+      };
+
     } catch (e) {
-      this.logger.error(`Biometric engine crash: ${e.message}`);
-      return { matchStatus: 'ERROR', confidenceScore: 0, reason: `Internal engine error: ${e.message}`, providerId: 'local-face-matcher' };
-    } finally {
-      this.logger.log('Step 4: Memory cleanup...');
-      // Dispose of the input tensors explicitly
-      if (refTensor) this.human.tf.dispose(refTensor);
-      if (liveTensor) this.human.tf.dispose(liveTensor);
-      // End the overall memory scope
-      this.human.tf.engine().endScope();
+      this.logger.error(`Face Bridge error: ${e.message}`);
+      return { matchStatus: 'ERROR', confidenceScore: 0, reason: `Biometric service error: ${e.message}`, providerId: 'arcface-bridge' };
     }
   }
 
-  private async decodeImageFallback(buffer: Buffer): Promise<any> {
-    let width, height, data;
+  /**
+   * Saves the face embedding to the database in the background to not block the main response.
+   */
+  private async saveEmbeddingInBackground(image: string, voterId: string) {
+    try {
+      const response = await fetch(`${this.bridgeUrl}/extract`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image }),
+      });
 
-    // Detect if PNG or JPEG based on magic bytes
-    if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) {
-      // It's a PNG
-      const png = PNG.sync.read(buffer);
-      width = png.width;
-      height = png.height;
-      data = png.data;
-    } else if (buffer[0] === 0xff && buffer[1] === 0xd8) {
-      // It's a JPEG
-      const rawImageData = jpeg.decode(buffer, { useTArray: true, formatAsRGBA: true });
-      width = rawImageData.width;
-      height = rawImageData.height;
-      data = rawImageData.data;
-    } else {
-      throw new Error("Unsupported image format. Only JPEG and PNG are supported.");
+      if (response.ok) {
+        const data = await response.json();
+        if (data.status === 'success' && data.embedding) {
+          // Convert float array to Buffer for Prisma
+          const embeddingBuffer = Buffer.from(new Float32Array(data.embedding).buffer);
+          
+          await this.prisma.voter.update({
+            where: { id: voterId },
+            data: { 
+              faceEmbedding: embeddingBuffer,
+              faceEmbeddingVersion: 'arcface-buffalo-s'
+            } as any,
+          });
+          this.logger.log(`Successfully stored biometric embedding for voter ${voterId}`);
+        }
+      }
+    } catch (err) {
+      this.logger.error(`Failed to save background embedding: ${err.message}`);
     }
-
-    // Human expects an RGB tensor tensor3d. 
-    // We'll normalize to Float32 [0, 1] to ensure the AI gets the cleanest possible signal
-    const numPixels = width * height;
-    const rgbData = new Int32Array(numPixels * 3);
-
-    for (let i = 0; i < numPixels; i++) {
-      rgbData[i * 3 + 0] = data[i * 4 + 0];
-      rgbData[i * 3 + 1] = data[i * 4 + 1];
-      rgbData[i * 3 + 2] = data[i * 4 + 2];
-    }
-
-    await this.human.tf.ready();
-    return this.human.tf.tensor3d(rgbData, [height, width, 3], 'int32');
   }
 }
 

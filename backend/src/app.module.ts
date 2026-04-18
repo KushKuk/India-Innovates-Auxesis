@@ -9,6 +9,7 @@ import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { BoothModule } from './booth/booth.module';
 import { FingerprintModule } from './fingerprint/fingerprint.module';
+import { EncryptionModule } from './common/encryption/encryption.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -23,6 +24,7 @@ import { AppController } from './app.controller';
     AuthModule,
     BoothModule,
     FingerprintModule,
+    EncryptionModule,
   ],
   controllers: [AppController],
 })

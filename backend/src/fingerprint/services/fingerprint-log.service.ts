@@ -27,7 +27,7 @@ export class FingerprintLogService {
    * Called by both enroll and verify flows regardless of outcome.
    */
   async log(params: CreateLogParams) {
-    return this.prisma.fingerprintLog.create({
+    return this.prisma.client.fingerprintLog.create({
       data: {
         sessionId: params.sessionId,
         voterId: params.voterId,
@@ -48,7 +48,7 @@ export class FingerprintLogService {
 
   /** Retrieve all logs for a given sessionId */
   async getBySession(sessionId: string) {
-    return this.prisma.fingerprintLog.findMany({
+    return this.prisma.client.fingerprintLog.findMany({
       where: { sessionId },
       orderBy: { timestamp: 'desc' },
     });

@@ -1,16 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EncryptionService } from '../common/encryption/encryption.service';
 
 @Injectable()
 export class VotersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private encryptionService: EncryptionService, // Inject EncryptionService
+  ) {}
 
   async search(name: string, dobOrAge?: string, useAge?: boolean) {
-    const searchName = name.toLowerCase().trim();
+    if (!name) return [];
+    
+    // Use the Blind Index for exact match search on encrypted data
+    const nameHash = this.encryptionService.generateBlindIndex(name);
 
-    const voters = await (this.prisma.voter as any).findMany({
+    const voters = await this.prisma.client.voter.findMany({
       where: {
-        name: { contains: searchName },
+        nameHash: nameHash,
       },
       include: {
         documents: {
@@ -20,6 +27,8 @@ export class VotersService {
         }
       }
     });
+
+    if (voters.length === 0) return [];
 
     if (!dobOrAge) return voters;
 
@@ -32,7 +41,7 @@ export class VotersService {
   }
 
   async findById(id: string) {
-    return (this.prisma.voter as any).findUnique({
+    return this.prisma.client.voter.findUnique({
       where: { id },
       include: {
         documents: {
@@ -45,7 +54,7 @@ export class VotersService {
   }
 
   async markAsVoted(id: string) {
-    return this.prisma.voter.update({
+    return this.prisma.client.voter.update({
       where: { id },
       data: { 
         hasVoted: true,
@@ -55,7 +64,7 @@ export class VotersService {
   }
 
   async updateVotingStatus(id: string, status: string) {
-    return this.prisma.voter.update({
+    return this.prisma.client.voter.update({
       where: { id },
       data: { votingStatus: status },
     });
@@ -66,7 +75,7 @@ export class VotersService {
    * Returns PENDING, IN_PROGRESS, VOTED, or EXPIRED
    */
   async getVotingStatus(id: string) {
-    const voter = await this.prisma.voter.findUnique({ where: { id } });
+    const voter = await this.prisma.client.voter.findUnique({ where: { id } });
     
     if (!voter) {
       return { status: 'NOT_FOUND', canVote: false };
@@ -83,6 +92,6 @@ export class VotersService {
   }
 
   async findAll() {
-    return this.prisma.voter.findMany();
+    return this.prisma.client.voter.findMany();
   }
 }

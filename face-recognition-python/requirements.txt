@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+onnxruntime
+opencv-python-headless
+numpy
+pydantic
+requests
+python-multipart
+thefuzz

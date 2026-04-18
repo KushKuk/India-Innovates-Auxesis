@@ -1,0 +1,34 @@
+PostgreSQL Status Report (2026-04-15T13:09:30.401Z)
+
+- voter: 13 records
+! Model documentType check failed: 
+Invalid `prisma[model].count()` invocation in
+C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\prisma\scripts\check_postgres_status.js:14:41
+
+  11 
+  12 for (const model of models) {
+  13   try {
+→ 14     const count = await prisma[model].count(
+The table `public.DocumentType` does not exist in the current database.
+! Model voterDocument check failed: 
+Invalid `prisma[model].count()` invocation in
+C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\prisma\scripts\check_postgres_status.js:14:41
+
+  11 
+  12 for (const model of models) {
+  13   try {
+→ 14     const count = await prisma[model].count(
+The table `public.VoterDocument` does not exist in the current database.
+- token: 0 records
+- officer: 2 records
+- booth: 1 records
+- auditLog: 0 records
+! Model fingerprintTemplate check failed: 
+Invalid `prisma[model].count()` invocation in
+C:\Users\Lenovo\.gemini\antigravity\scratch\India-Innovates-Auxesis\backend\prisma\scripts\check_postgres_status.js:14:41
+
+  11 
+  12 for (const model of models) {
+  13   try {
+→ 14     const count = await prisma[model].count(
+The table `public.FingerprintTemplate` does not exist in the current database.

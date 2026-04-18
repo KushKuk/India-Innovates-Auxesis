@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -17,10 +17,15 @@ model Voter {
   photoUrl     String
   photoVerifiedAt DateTime?
   faceVerificationEnabled Boolean @default(true)
+  faceEmbedding  Bytes?
+  faceEmbeddingVersion String?  @default("arcface-buffalo-s")
   votingStatus String   @default("PENDING") // PENDING | IN_PROGRESS | VOTED | EXPIRED
   hasVoted     Boolean  @default(false)
   documentType String?
   createdAt    DateTime @default(now())
+  
+  // Blind Index for secure searching
+  nameHash     String?  @unique
 
   tokens                Token[]
   auditLogs             AuditLog[]
@@ -50,6 +55,9 @@ model VoterDocument {
   verificationStatus  String    @default("PENDING")
   verifiedAt          DateTime?
   remarks             String?
+
+  // Blind Index for secure searching
+  documentNumberHash  String?   @unique
 
   @@unique([voterId, documentTypeId])
 }
