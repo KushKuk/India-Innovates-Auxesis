@@ -124,6 +124,19 @@ async function main() {
     }
   }
 
+  // 4. Process AuditLogs
+  const logs = await prisma.auditLog.findMany();
+  console.log(`Processing ${logs.length} audit logs...`);
+  for (const log of logs) {
+    if (log.details && !log.details.startsWith(`${VERSION}:`)) {
+      await prisma.auditLog.update({
+        where: { id: log.id },
+        data: { details: encrypt(log.details) }
+      });
+      console.log(`  ✅ Updated log: ${log.id}`);
+    }
+  }
+
   console.log('🎉 Migration Complete!');
 }
 

@@ -66,29 +66,37 @@ export class FingerprintService {
       });
     }
 
-    // ── Step 2: Extract template ────────────────────────────────────────
-    const extracted = await this.extractor.extract(preprocessed.processedBuffer);
-    if (!extracted.success) {
-      throw new BadRequestException({
-        failureReason: extracted.failureReason,
-        message: extracted.message,
-      });
+    // ── Step 2: Extract template OR use Hardware Template ────────────────
+    let template: Buffer;
+    
+    if (dto.hardwareTemplate) {
+      this.logger.log(`Using provided 512-byte Hardware Template for voter ${dto.voterId}`);
+      template = Buffer.from(dto.hardwareTemplate, 'base64');
+    } else {
+      const extracted = await this.extractor.extract(preprocessed.processedBuffer);
+      if (!extracted.success) {
+        throw new BadRequestException({
+          failureReason: extracted.failureReason,
+          message: extracted.message,
+        });
+      }
+      template = extracted.template;
     }
 
     // ── Step 3: Encrypt & store ─────────────────────────────────────────
     const encKey = this.config.getOrThrow<string>('FINGERPRINT_ENCRYPTION_KEY');
-    const { ciphertext, iv } = encryptTemplate(extracted.template, encKey);
+    const { ciphertext, iv } = encryptTemplate(template, encKey);
 
     const stored = await this.prisma.client.fingerprintTemplate.create({
       data: {
         voterId: dto.voterId,
         fingerLabel: dto.fingerLabel,
-        templateType: EXTRACTOR_USED,
+        templateType: dto.hardwareTemplate ? 'as608_native' : EXTRACTOR_USED,
         templateData: Buffer.from(ciphertext),
         iv,
         qualityScore: preprocessed.qualityScore,
         imageRef: dto.imageRef ?? null,
-        templateVersion: TEMPLATE_VERSION,
+        templateVersion: dto.hardwareTemplate ? '512b_native' : TEMPLATE_VERSION,
         active: true,
       },
     });
@@ -122,6 +130,29 @@ export class FingerprintService {
       this.config.get<string>('FINGERPRINT_MATCH_THRESHOLD') ?? '40',
     );
     const inputFormat = mimeType.includes('png') ? 'png' : 'jpg';
+
+    // ── Step 0: Hardware Bypass (Demo Mode) ──────────────────────────────
+    // If the sensor matched the finger locally, we trust it and skip software matching.
+    if (dto.matchedPageId) {
+      this.logger.log(`Hardware Match reported for Slot #${dto.matchedPageId}. Bypassing software verification.`);
+      const hwRef = `hw:${dto.matchedPageId}`;
+      const hwMatch = await this.prisma.client.fingerprintTemplate.findFirst({
+        where: { voterId: dto.voterId, imageRef: hwRef, active: true },
+      });
+
+      if (hwMatch) {
+         return {
+            matched: true,
+            score: 100, // Hardware confirmation
+            threshold,
+            qualityScore: hwMatch.qualityScore,
+            matchedTemplateId: hwMatch.id,
+            failureReason: null,
+            message: "Hardware Identity Verified"
+         };
+      }
+      this.logger.warn(`Hardware Slot #${dto.matchedPageId} does not belong to Voter ${dto.voterId}. Proceeding to software fallback.`);
+    }
 
     // ── Step 1: Preprocess ──────────────────────────────────────────────
     const preprocessed = await this.preprocessor.preprocess(imageBuffer, mimeType);
@@ -225,4 +256,27 @@ export class FingerprintService {
     }
     return logs;
   }
-}
+
+  async getLatestStatus(voterId: string) {
+    const windowMinutes = 5;
+    const since = new Date();
+    since.setMinutes(since.getMinutes() - windowMinutes);
+
+    // Find latest successful verification for this voter in the last 5 minutes
+    const latestSuccess = await this.prisma.base.fingerprintLog.findFirst({
+      where: {
+        voterId,
+        status: VerificationStatus.SUCCESS,
+        timestamp: { gte: since },
+      },
+      orderBy: { timestamp: 'desc' },
+    });
+
+    return {
+      success: !!latestSuccess,
+      timestamp: latestSuccess?.timestamp || null,
+      matchScore: latestSuccess?.matchScore || null,
+      sessionId: latestSuccess?.sessionId || null,
+    };
+  }
+} // trigger reload again for threshold

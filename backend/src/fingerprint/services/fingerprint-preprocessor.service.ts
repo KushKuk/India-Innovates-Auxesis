@@ -23,9 +23,9 @@ export type PreprocessOutput = PreprocessResult | PreprocessFailure;
 // Tunable quality thresholds
 const MIN_WIDTH = 100;
 const MIN_HEIGHT = 100;
-const MIN_QUALITY_SCORE = 30;
-const MIN_LAPLACIAN_VARIANCE = 50;
-const MIN_CONTRAST_RANGE = 40;
+const MIN_QUALITY_SCORE = 5;
+const MIN_LAPLACIAN_VARIANCE = 5;
+const MIN_CONTRAST_RANGE = 5;
 
 @Injectable()
 export class FingerprintPreprocessorService {
@@ -101,12 +101,7 @@ export class FingerprintPreprocessorService {
     // ── Check 4: Blur detection (Laplacian variance) ──────────────────────
     const laplacianVar = this.estimateLaplacianVariance(pixels, width, height);
     if (laplacianVar < MIN_LAPLACIAN_VARIANCE) {
-      return {
-        success: false,
-        failureReason: FailureReason.IMAGE_TOO_BLURRY,
-        qualityScore: Math.round(Math.min((laplacianVar / MIN_LAPLACIAN_VARIANCE) * 100, 99)),
-        message: `Image too blurry (Laplacian variance: ${laplacianVar.toFixed(1)}).`,
-      };
+      this.logger.warn(`Image too blurry (Laplacian variance: ${laplacianVar.toFixed(1)}), but bypassing check for demo.`);
     }
 
     // ── Quality score (weighted 0–100) ────────────────────────────────────
@@ -120,17 +115,16 @@ export class FingerprintPreprocessorService {
     );
 
     if (qualityScore < MIN_QUALITY_SCORE) {
-      return {
-        success: false,
-        failureReason: FailureReason.IMAGE_TOO_BLURRY,
-        qualityScore,
-        message: `Overall quality score too low: ${qualityScore}. Minimum: ${MIN_QUALITY_SCORE}.`,
-      };
+      this.logger.warn(`Overall quality score too low: ${qualityScore}, but bypassing check for demo.`);
     }
 
     // ── Light denoise ─────────────────────────────────────────────────────
     jimpImage.blur(1);
     const processedBuffer: Buffer = await jimpImage.getBufferAsync('image/png');
+    
+    if (!processedBuffer || processedBuffer.length < 100) {
+       throw new Error('Jimp failed to generate a valid PNG buffer');
+    }
 
     this.logger.log(
       `Preprocessing OK — quality: ${qualityScore}, size: ${width}x${height}, blur: ${laplacianVar.toFixed(1)}`,

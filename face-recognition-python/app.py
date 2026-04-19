@@ -37,6 +37,7 @@ async def verify(req: VerifyRequest):
         live_feat, status = engine.get_embedding(live_data)
         
         if status != "SUCCESS":
+            print(f"❌ Verify Error (Live Image): {status}")
             return {"match": False, "confidence": 0, "reason": status}
 
         # 2. Get Reference Embedding
@@ -44,28 +45,36 @@ async def verify(req: VerifyRequest):
         if req.stored_embedding:
             ref_feat = np.array(req.stored_embedding, dtype=np.float32)
         elif req.ref_image:
-            if not os.path.exists(req.ref_image):
-                return {"match": False, "confidence": 0, "reason": "REF_IMAGE_NOT_FOUND"}
-            with open(req.ref_image, 'rb') as f:
+            actual_path = req.ref_image
+            if actual_path.startswith('/uploads') or actual_path.startswith('uploads/'):
+                actual_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend', actual_path.lstrip('/')))
+                
+            if not os.path.exists(actual_path):
+                print(f"❌ Verify Error: REF_IMAGE_NOT_FOUND ({actual_path})")
+                return {"match": False, "confidence": 0, "reason": f"REF_IMAGE_NOT_FOUND: {actual_path}"}
+            with open(actual_path, 'rb') as f:
                 ref_data = f.read()
             ref_feat, status = engine.get_embedding(ref_data)
             if status != "SUCCESS":
+                print(f"❌ Verify Error (Ref Image): REF_ERR_{status}")
                 return {"match": False, "confidence": 0, "reason": f"REF_ERR_{status}"}
         
         if ref_feat is None:
+            print("❌ Verify Error: NO_REFERENCE_DATA")
             return {"match": False, "confidence": 0, "reason": "NO_REFERENCE_DATA"}
 
         # 3. Compute Similarity
         similarity = engine.compute_similarity(live_feat, ref_feat)
         threshold = 0.45 # Buffalo_S threshold
         
+        print(f"✅ ArcFace Match Complete - Similarity: {similarity:.4f} / Threshold: {threshold}")
         return {
             "match": bool(similarity > threshold),
             "confidence": float(similarity),
             "threshold": threshold
         }
     except Exception as e:
-        print(f"Error in /verify: {str(e)}")
+        print(f"❌ Verify Exception: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/extract")

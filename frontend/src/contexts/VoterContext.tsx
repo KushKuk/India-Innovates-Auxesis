@@ -4,6 +4,7 @@ export type VotingStatus = 'NOT_VOTED' | 'TOKEN_ACTIVE' | 'IN_PROGRESS' | 'VOTED
 
 export interface VoterRecord {
   id: string;
+  tokenId?: string;
   name: string;
   voterId: string;
   idType: string;

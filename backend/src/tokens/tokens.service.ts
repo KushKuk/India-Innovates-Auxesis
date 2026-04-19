@@ -31,7 +31,7 @@ export class TokensService {
     const prefix = data.verificationMode === 'manual' ? 'M' : '';
     const code = this.generateCode(prefix);
 
-    return this.prisma.token.create({
+    return this.prisma.client.token.create({
       data: {
         code,
         voterId: data.voterId,
@@ -49,7 +49,7 @@ export class TokensService {
    * Find an active (non-expired) token by voter ID
    */
   async findActiveByVoterId(voterId: string) {
-    return this.prisma.token.findFirst({
+    return this.prisma.client.token.findFirst({
       where: {
         voter: {
           id: voterId,
@@ -67,7 +67,7 @@ export class TokensService {
   async validate(voterId?: string, idType?: string, idNumber?: string) {
     if (voterId) {
       // Search by voter ID — match any token whose voter id matches
-      return this.prisma.token.findFirst({
+      return this.prisma.client.token.findFirst({
         where: {
           voter: { id: voterId },
           votingStatus: 'TOKEN_ACTIVE',
@@ -78,7 +78,7 @@ export class TokensService {
     }
 
     if (idType && idNumber) {
-      return this.prisma.token.findFirst({
+      return this.prisma.client.token.findFirst({
         where: {
           idType,
           idNumber: { equals: idNumber },
@@ -96,7 +96,7 @@ export class TokensService {
    * Get all active tokens
    */
   async findAllActive() {
-    return this.prisma.token.findMany({
+    return this.prisma.client.token.findMany({
       where: {
         votingStatus: 'TOKEN_ACTIVE',
         expiresAt: { gt: new Date() },
@@ -110,7 +110,7 @@ export class TokensService {
    * Update token voting status
    */
   async updateStatus(id: string, status: string) {
-    const token = await this.prisma.token.findUnique({ where: { id } });
+    const token = await this.prisma.client.token.findUnique({ where: { id } });
     if (!token) throw new NotFoundException('Token not found');
 
     const data: any = { votingStatus: status };
@@ -118,7 +118,7 @@ export class TokensService {
       data.confirmedAt = new Date();
     }
 
-    const updated = await this.prisma.token.update({
+    const updated = await this.prisma.client.token.update({
       where: { id },
       data,
       include: { voter: true },
@@ -126,7 +126,7 @@ export class TokensService {
 
     // If voted, also mark the voter
     if (status === 'VOTED') {
-      await this.prisma.voter.update({
+      await this.prisma.client.voter.update({
         where: { id: token.voterId },
         data: { hasVoted: true, votingStatus: 'VOTED' },
       });
@@ -140,7 +140,7 @@ export class TokensService {
    * This sets a 3-minute window for the voter to actually vote
    */
   async verifyToken(tokenId: string) {
-    const token = await this.prisma.token.findUnique({ 
+    const token = await this.prisma.client.token.findUnique({ 
       where: { id: tokenId },
       include: { voter: true },
     });
@@ -153,7 +153,7 @@ export class TokensService {
     const inProgressExpiryMinutes = 3; // 3-minute window for voting
 
     // Update token status
-    const updatedToken = await this.prisma.token.update({
+    const updatedToken = await this.prisma.client.token.update({
       where: { id: tokenId },
       data: {
         votingStatus: 'IN_PROGRESS',
@@ -164,7 +164,7 @@ export class TokensService {
     });
 
     // Update voter status
-    await this.prisma.voter.update({
+    await this.prisma.client.voter.update({
       where: { id: token.voterId },
       data: { votingStatus: 'IN_PROGRESS' },
     });
@@ -177,7 +177,7 @@ export class TokensService {
    * This prevents duplicate voting
    */
   async approveVoting(tokenId: string) {
-    const token = await this.prisma.token.findUnique({
+    const token = await this.prisma.client.token.findUnique({
       where: { id: tokenId },
       include: { voter: true },
     });
@@ -188,7 +188,7 @@ export class TokensService {
     }
 
     // Update token status
-    const updatedToken = await this.prisma.token.update({
+    const updatedToken = await this.prisma.client.token.update({
       where: { id: tokenId },
       data: {
         votingStatus: 'VOTED',
@@ -198,7 +198,7 @@ export class TokensService {
     });
 
     // Update voter status
-    await this.prisma.voter.update({
+    await this.prisma.client.voter.update({
       where: { id: token.voterId },
       data: { votingStatus: 'VOTED', hasVoted: true },
     });
@@ -214,7 +214,7 @@ export class TokensService {
     const now = new Date();
 
     // Find all IN_PROGRESS tokens that have expired
-    const expiredTokens = await this.prisma.token.findMany({
+    const expiredTokens = await this.prisma.client.token.findMany({
       where: {
         votingStatus: 'IN_PROGRESS',
         expiresAt: { lte: now },
@@ -225,13 +225,13 @@ export class TokensService {
     // Revert each expired token
     for (const token of expiredTokens) {
       // Mark token as expired
-      await this.prisma.token.update({
+      await this.prisma.client.token.update({
         where: { id: token.id },
         data: { votingStatus: 'EXPIRED' },
       });
 
       // Revert voter status to PENDING
-      await this.prisma.voter.update({
+      await this.prisma.client.voter.update({
         where: { id: token.voterId },
         data: { votingStatus: 'PENDING', hasVoted: false },
       });
@@ -244,7 +244,7 @@ export class TokensService {
    * Get token expiration status
    */
   async getTokenStatus(tokenId: string) {
-    const token = await this.prisma.token.findUnique({
+    const token = await this.prisma.client.token.findUnique({
       where: { id: tokenId },
       include: { voter: true },
     });

@@ -42,7 +42,7 @@ export class LocalFaceMatchProvider extends FaceMatchProvider implements OnModul
 
     try {
       // 1. Fetch voter biometric data
-      const voter = await this.prisma.voter.findUnique({
+      const voter = await this.prisma.client.voter.findUnique({
         where: { id: voterId },
         select: { photoUrl: true, faceVerificationEnabled: true, faceEmbedding: true } as any,
       }) as any;
@@ -74,7 +74,8 @@ export class LocalFaceMatchProvider extends FaceMatchProvider implements OnModul
       } else {
         // Fallback to path-based match (first time verify)
         this.logger.log('No embedding found. Processing reference image from disk...');
-        requestBody.ref_image = join(process.cwd(), voter.photoUrl);
+        // Send relative path so Docker container can resolve it correctly
+        requestBody.ref_image = voter.photoUrl;
       }
 
       // 3. Call Face Bridge
@@ -130,7 +131,7 @@ export class LocalFaceMatchProvider extends FaceMatchProvider implements OnModul
           // Convert float array to Buffer for Prisma
           const embeddingBuffer = Buffer.from(new Float32Array(data.embedding).buffer);
           
-          await this.prisma.voter.update({
+          await this.prisma.client.voter.update({
             where: { id: voterId },
             data: { 
               faceEmbedding: embeddingBuffer,

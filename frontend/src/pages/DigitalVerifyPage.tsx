@@ -12,10 +12,8 @@ import { ScannedIDCard } from '@/components/ScannedIDCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLanguageSelection } from '@/contexts/LanguageSelectionContext';
 import { useVoterDB } from '@/contexts/VoterContext';
-import { updateVoterStatusInBackend } from '@/lib/api';
+import { updateVoterStatusInBackend, digitalVerify } from '@/lib/api';
 import type { StageStatus } from '@/types/verification';
-
-const generateToken = () => Math.random().toString(36).substring(2, 8).toUpperCase();
 
 export default function DigitalVerifyPage() {
   const { t, lang } = useLanguage();
@@ -52,38 +50,54 @@ export default function DigitalVerifyPage() {
 
   const handleBiometricSuccess = useCallback(async () => {
     updateStage('biometric', 'success');
-    const token = generateToken();
-    setGeneratedToken(token);
-    setTokenGenerated(true);
-    setCurrentStage(2);
-
-    const voterId = currentVoterId || 'VOT001'; 
+    
+    const voterId = currentVoterId;
+    if (!voterId) {
+      toast.error('Session Error: No voter identified.');
+      return;
+    }
     setCurrentVoterId(voterId);
 
-    // Sync with backend
+    // Sync with backend AND Generate Official Token
     try {
       if (scannedVoter?.id) {
-        await updateVoterStatusInBackend(scannedVoter.id, 'TOKEN_ACTIVE');
+        // Use the Backend to generate the actual token
+        const result = await digitalVerify({
+           voterId: scannedVoter.id, // Primary Key ID
+           idType: scannedVoter.documentType || 'Aadhar',
+           idNumber: scannedVoter.documentNumber || voterId
+        });
+
+        // Use the official token from the server
+        const token = result.code;
+        setGeneratedToken(token);
+        setTokenGenerated(true);
+        setCurrentStage(2);
+
+        addVoter({
+          id: scannedVoter.id,
+          tokenId: result.id, // THE TOKEN UUID FROM BACKEND
+          name: scannedVoter.name || 'Voter',
+          voterId: voterId,
+          idType: scannedVoter.documentType || 'id',
+          idNumber: scannedVoter.documentNumber || voterId,
+          token,
+          tokenGeneratedAt: new Date(),
+          tokenExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+          verificationMode: 'digital',
+          votingStatus: 'TOKEN_ACTIVE',
+          hasVoted: false,
+        });
+        addAuditEntry({ terminal: 'digital', action: 'Biometric verified & token generated', status: 'success', details: `Token: ${token}`, voterId });
+      } else {
+        throw new Error("No voter ID found in scanned session");
       }
-    } catch (e) {
-      console.error('Backend sync failed:', e);
+    } catch (e: any) {
+      console.error('Core Verification Sync failed:', e);
+      toast.error(e.message || 'Verification failed. Please try again.');
+      updateStage('biometric', 'failed');
     }
-    
-    addVoter({
-      id: scannedVoter?.id,
-      name: scannedVoter?.name || 'Voter',
-      voterId: voterId,
-      idType: scannedVoter?.documentType || 'id',
-      idNumber: scannedVoter?.documentNumber || voterId,
-      token,
-      tokenGeneratedAt: new Date(),
-      tokenExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
-      verificationMode: 'digital',
-      votingStatus: 'TOKEN_ACTIVE',
-      hasVoted: false,
-    });
-    addAuditEntry({ terminal: 'digital', action: 'Biometric verified & token generated', status: 'success', details: `Token: ${token}`, voterId });
-  }, [updateStage, addVoter, addAuditEntry]);
+  }, [updateStage, addVoter, addAuditEntry, currentVoterId, scannedVoter]);
 
   const handleBiometricFail = useCallback(() => {
     updateStage('biometric', 'failed');

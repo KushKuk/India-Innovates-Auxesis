@@ -411,3 +411,26 @@ export async function scanQr(qrString: string) {
     throw error;
   }
 }
+
+/**
+ * Poll the backend for the latest fingerprint verification status for a voter.
+ */
+export async function checkFingerprintStatus(voterId: string) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/fingerprint/status/${voterId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error checking fingerprint status:', error);
+    throw error;
+  }
+}

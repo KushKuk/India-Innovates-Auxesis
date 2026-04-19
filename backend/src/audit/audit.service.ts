@@ -16,7 +16,7 @@ export class AuditService {
     voterId?: string;
     officerId?: string;
   }) {
-    return this.prisma.auditLog.create({ data });
+    return this.prisma.client.auditLog.create({ data });
   }
 
   /**
@@ -27,7 +27,7 @@ export class AuditService {
     if (terminal) where.terminal = terminal;
     if (status) where.status = status;
 
-    return this.prisma.auditLog.findMany({
+    return this.prisma.client.auditLog.findMany({
       where,
       orderBy: { timestamp: 'desc' },
       take: 200,

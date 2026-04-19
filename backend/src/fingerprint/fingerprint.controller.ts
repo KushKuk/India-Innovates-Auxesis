@@ -93,8 +93,20 @@ export class FingerprintController {
     file: { buffer: Buffer; mimetype: string; originalname: string },
     @Body() dto: VerifyFingerprintDto,
   ) {
-    if (!file) throw new BadRequestException('Fingerprint image file is required.');
-    return this.fingerprintService.verify(file.buffer, file.mimetype, dto);
+    try {
+      if (!file) throw new BadRequestException('Fingerprint image file is required.');
+      console.log(`[BIOMETRIC-DEBUG] Incoming Verify Request:`, {
+        voterId: dto.voterId,
+        mimeType: file.mimetype,
+        bufferSize: file.buffer?.length
+      });
+      
+      const response = await this.fingerprintService.verify(file.buffer, file.mimetype, dto);
+      return response;
+    } catch (error) {
+       console.error(`[CRITICAL-BIOMETRIC-ERROR]`, error);
+       throw error;
+    }
   }
 
   /**
@@ -109,5 +121,10 @@ export class FingerprintController {
   @Get('logs/:sessionId')
   async getLogs(@Param('sessionId') sessionId: string) {
     return this.fingerprintService.getLogs(sessionId);
+  }
+
+  @Get('status/:voterId')
+  async getStatus(@Param('voterId') voterId: string) {
+    return this.fingerprintService.getLatestStatus(voterId);
   }
 }

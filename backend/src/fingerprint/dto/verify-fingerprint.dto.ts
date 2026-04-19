@@ -16,4 +16,14 @@ export class VerifyFingerprintDto {
   @IsOptional()
   @IsString()
   deviceId?: string;
+
+  /** 512-byte hardware template encoded in Base64 */
+  @IsOptional()
+  @IsString()
+  hardwareTemplate?: string;
+
+  /** Optional hardware slot ID if matched locally by the sensor */
+  @IsOptional()
+  @IsString()
+  matchedPageId?: string;
 }

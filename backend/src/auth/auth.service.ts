@@ -11,7 +11,7 @@ export class AuthService {
   ) {}
 
   async login(officerId: string, password: string) {
-    const officer = await this.prisma.officer.findUnique({
+    const officer = await this.prisma.client.officer.findUnique({
       where: { officerId },
     });
 
@@ -42,7 +42,7 @@ export class AuthService {
   }
 
   async getProfile(officerUuid: string) {
-    const officer = await this.prisma.officer.findUnique({
+    const officer = await this.prisma.client.officer.findUnique({
       where: { id: officerUuid },
     });
     if (!officer) throw new UnauthorizedException();

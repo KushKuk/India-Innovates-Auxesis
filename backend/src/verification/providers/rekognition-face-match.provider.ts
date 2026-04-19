@@ -25,7 +25,7 @@ export class RekognitionFaceMatchProvider extends FaceMatchProvider {
 
     try {
       // 1. Fetch voter reference image from DB
-      const voter = await this.prisma.voter.findUnique({
+      const voter = await this.prisma.client.voter.findUnique({
         where: { id: voterId },
         select: { photoUrl: true, faceVerificationEnabled: true },
       });

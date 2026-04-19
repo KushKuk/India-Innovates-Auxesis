@@ -17,4 +17,9 @@ export class EnrollFingerprintDto {
   @IsOptional()
   @IsString()
   deviceId?: string;
+
+  /** 512-byte hardware template encoded in Base64 */
+  @IsOptional()
+  @IsString()
+  hardwareTemplate?: string;
 }

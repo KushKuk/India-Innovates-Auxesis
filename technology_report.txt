@@ -1,0 +1,52 @@
+================================================================================
+                    VOTER BIOMETRIC VERIFICATION SYSTEM
+                       COMPREHENSIVE TECHNOLOGY REPORT
+================================================================================
+
+1. SYSTEM ARCHITECTURE 
+---------------------------------------------------------
+This system operates on a decentralized edge computing model, designed to function offline at secure polling stations. It leverages a microservices-inspired architecture combining a Node.js Core API, Python-based Deep Learning bridges, and a robust React frontend.
+
+2. CORE BACKEND SERVICE
+---------------------------------------------------------
+- Framework: NestJS (Node.js framework for scalable server-side apps)
+- Language: TypeScript
+- Database ORM: Prisma
+- Relational Database: PostgreSQL
+
+3. DATA SECURITY & ENCRYPTION 
+---------------------------------------------------------
+- Protocol: AES-256-GCM (Military-grade field-level encryption for all PII data like Names, DOB, Address).
+- Searching Mechanism: HMAC-SHA256 Dependant Blind Indexes (Allows Prisma to search through encrypted database fields without decrypting the entire table).
+- QR Verification: Fully encrypted v2 payloads, enabling secure identity tracking without exposing data on physical documents.
+
+4. BIOMETRIC PIPELINE 1: FACIAL RECOGNITION 
+---------------------------------------------------------
+- Edge Device Pipeline: Python Fast-API Service ("Face Bridge")
+- Deep Learning Framework: ONNX Runtime
+- Models Used: ArcFace (InsightFace buffalo_s)
+- Algorithms: Feature Embedding Extraction and Cosine Similarity Matching.
+- Browser/Mock Pipeline: @vladmandic/human (Standalone WASM/WebGL based tensor processing for lightweight front-end inference).
+
+5. BIOMETRIC PIPELINE 2: FINGERPRINT VERIFICATION
+---------------------------------------------------------
+- Hardware: AS608 Optical Fingerprint Sensor routed through Arduino Nano via UART (Universal Asynchronous Receiver-Transmitter).
+- Communication Bridge: Python PySerial bridge reading raw 57600 baud image matrices.
+- Preprocessing: Advanced Grayscale normalization, Contrast stabilization via Python libraries and Node's `Jimp` framework.
+- Extraction Architecture: Crossing Number algorithm via SourceAFIS logic. Extracts Ridge Endings and Bifurcations to generate mathematically secure templates.
+- Safety: Fingerprint biometric templates are protected with AES-256-GCM Encryption before being stored in PostgreSQL byteA blobs. Images are never permanently saved.
+
+6. HARDWARE & EDGE DEPLOYMENT
+---------------------------------------------------------
+- Main AI Node: Raspberry Pi 5 (running offline verification logic).
+- Microcontrollers: Arduino Nano (for sensor handling).
+
+7. FRONTEND DASHBOARD
+---------------------------------------------------------
+- UI Libraries: React.js (via Vite)
+- Language: TypeScript (.tsx)
+- Implementation: Custom biometric capture interfaces and real-time scanning feedback hooks.
+
+================================================================================
+Generated for: India Innovates Hackathon (Auxesis)
+================================================================================

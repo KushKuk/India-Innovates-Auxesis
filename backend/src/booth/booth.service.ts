@@ -6,10 +6,10 @@ export class BoothService {
   constructor(private prisma: PrismaService) {}
 
   async findByCode(code: string) {
-    return this.prisma.booth.findUnique({ where: { boothCode: code } });
+    return this.prisma.client.booth.findUnique({ where: { boothCode: code } });
   }
 
   async findAll() {
-    return this.prisma.booth.findMany();
+    return this.prisma.client.booth.findMany();
   }
 }

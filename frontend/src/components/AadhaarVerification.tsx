@@ -51,6 +51,8 @@ export function AadhaarVerification({ onSuccess, onFail, onSwitchManual }: Props
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const qrScannerRef = useRef<Html5Qrcode | null>(null);
+  const isProcessing = useRef(false);
+
 
   const alarmPlayedRef = useRef(false);
 
@@ -83,10 +85,18 @@ export function AadhaarVerification({ onSuccess, onFail, onSwitchManual }: Props
         await scanner.start(
           { facingMode: 'environment' },
           {
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
+            fps: 30, // Higher FPS for capture
+            qrbox: (viewfinderWidth, viewfinderHeight) => {
+              const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+              const qrboxSize = Math.floor(minEdgeSize * 0.85); // Larger box for dense codes
+              return { width: qrboxSize, height: qrboxSize };
+            },
+            aspectRatio: 1.0
           },
           async (decodedText) => {
+            if (isProcessing.current) return;
+            isProcessing.current = true;
+
             // Success! We found a QR code
             console.log('QR Decoded:', decodedText);
             
@@ -94,9 +104,27 @@ export function AadhaarVerification({ onSuccess, onFail, onSwitchManual }: Props
               // Call backend to decode and verify Base64 TYPE|ID
               const voter = await scanQr(decodedText);
               
-              // If we reached here, voter was found
-              await scanner.stop();
-              qrScannerRef.current = null;
+              // BLOCK if already voted
+              if (voter.hasVoted) {
+                if (qrScannerRef.current) {
+                  await qrScannerRef.current.stop();
+                  qrScannerRef.current = null;
+                }
+                setScanning(false);
+                playAlarmBeep();
+                toast.error('Identity Fraud Prevention: This voter has already cast their vote.', {
+                  duration: 5000,
+                  style: { backgroundColor: '#fee2e2', color: '#991b1b', border: '1px solid #f87171' }
+                });
+                onFail();
+                return;
+              }
+
+              // If we reached here, voter was found and hasn't voted
+              if (qrScannerRef.current) {
+                await qrScannerRef.current.stop();
+                qrScannerRef.current = null;
+              }
               
               setScannedVoter({
                 id: voter.id,
@@ -116,6 +144,8 @@ export function AadhaarVerification({ onSuccess, onFail, onSwitchManual }: Props
               }), 2000);
             } catch (err: any) {
               console.error('Scan verification failed:', err);
+              // Only reset lock if it failed (so we can try again)
+              isProcessing.current = false;
               toast.error(err.message || 'Invalid ID card or record not found');
             }
           },
@@ -195,7 +225,7 @@ export function AadhaarVerification({ onSuccess, onFail, onSwitchManual }: Props
              <div className="relative aspect-video rounded-lg overflow-hidden border-2 border-primary bg-black">
                 <div id="qr-reader" className="w-full h-full" />
                 <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                   <div className="w-64 h-64 border-2 border-primary/50 rounded-lg flex items-center justify-center">
+                   <div className="w-80 h-80 border-2 border-primary/50 rounded-lg flex items-center justify-center">
                       <div className="scan-line absolute inset-x-0 h-1 bg-primary/60 z-10" />
                       <p className="text-primary text-[10px] uppercase font-bold bg-black/40 px-2 py-1 rounded">Align QR Code Here</p>
                    </div>

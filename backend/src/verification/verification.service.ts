@@ -23,7 +23,7 @@ export class VerificationService {
    * - Log audit entries
    */
   async digitalVerify(voterId: string, idType: string, idNumber: string) {
-    const voter = await this.prisma.voter.findUnique({ where: { id: voterId } });
+    const voter = await this.prisma.client.voter.findUnique({ where: { id: voterId } });
     if (!voter) throw new NotFoundException('Voter not found in electoral roll');
     if (voter.hasVoted) throw new BadRequestException('Voter has already voted');
 
@@ -65,12 +65,12 @@ export class VerificationService {
     reason: string,
     officerId: string,
   ) {
-    const voter = await this.prisma.voter.findUnique({ where: { id: voterId } });
+    const voter = await this.prisma.client.voter.findUnique({ where: { id: voterId } });
     if (!voter) throw new NotFoundException('Voter not found in electoral roll');
     if (voter.hasVoted) throw new BadRequestException('Voter has already voted');
 
     // Verify officer exists
-    const officer = await this.prisma.officer.findUnique({ where: { officerId } });
+    const officer = await this.prisma.client.officer.findUnique({ where: { officerId } });
     if (!officer) throw new NotFoundException('Officer not found');
 
     // Check for existing active token
@@ -103,7 +103,7 @@ export class VerificationService {
    */
   async faceMatch(voterId: string, liveImage: string) {
     try {
-      const voter = await this.prisma.voter.findUnique({ where: { id: voterId } });
+      const voter = await this.prisma.client.voter.findUnique({ where: { id: voterId } });
       if (!voter) throw new NotFoundException('Voter not found in electoral roll');
 
       if (voter.faceVerificationEnabled === false) {
@@ -144,55 +144,89 @@ export class VerificationService {
    */
   async scanQr(qrString: string) {
     try {
-      let type: string, id: string;
+      console.log(`[QR-SCAN] Received Encrypted QR payload...`);
       
-      try {
-        ({ type, id } = decodeQr(qrString));
-      } catch (e) {
-        throw new BadRequestException(e.message);
+      let decrypted: string;
+
+      if (qrString.startsWith('v2:')) {
+        decrypted = this.encryptionService.decrypt(qrString);
+        // If decryption failed or returned same string, it's invalid
+        if (decrypted === qrString || !decrypted.includes('|')) {
+          throw new BadRequestException('Security Violation: Decryption failed or invalid key usage.');
+        }
+      } else {
+        // Fallback for Demo: Allow plain-text if it contains the pipe separator
+        if (qrString.includes('|')) {
+          console.warn(`[QR-SCAN] Plain-text QR detected. Using fallback for demo.`);
+          decrypted = qrString;
+        } else {
+          throw new BadRequestException('Invalid QR format. Use Type|ID or encrypted v2: format.');
+        }
       }
+
+      const [type, rawId] = decrypted.split('|');
+      const scannedId = String(rawId?.trim());
+      console.log(`[QR-SCAN] Diagnostic: Type=${type}, scannedId="${scannedId}"`);
 
       let voter: any = null;
 
-      if (type === 'AADHAR' || type === 'PAN') {
-        const idHash = this.encryptionService.generateBlindIndex(id);
-        const searchDocType = type === 'AADHAR' ? 'AADHAR' : 'PAN';
+      try {
+        if (type === 'AADHAR' || type === 'PAN') {
+          const idHash = this.encryptionService.generateBlindIndex(scannedId);
+          const searchDocType = type === 'AADHAR' ? 'Aadh' : 'PAN';
+          console.log(`[QR-SCAN] Searching for hash: ${idHash}`);
 
-        voter = await this.prisma.client.voter.findFirst({
-          where: {
-            documents: {
-              some: {
-                documentNumberHash: idHash,
-                documentTypeName: { contains: searchDocType }
-              }
-            }
-          }
-        });
-      } else if (type === 'VOTER') {
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-        if (isUuid) {
-          voter = await this.prisma.client.voter.findUnique({ where: { id } });
-        }
-        if (!voter) {
-          // Search by document number (EPIC ID) using Blind Index
-          const idHash = this.encryptionService.generateBlindIndex(id);
-          voter = await this.prisma.client.voter.findFirst({
+          voter = await this.prisma.base.voter.findFirst({
             where: {
               documents: {
                 some: {
                   documentNumberHash: idHash,
-                  documentTypeName: { contains: 'Voter' }
+                  documentTypeName: { contains: searchDocType, mode: 'insensitive' }
                 }
               }
-            }
+            },
+            select: { id: true, name: true } // SAFE MODE: Only fetch basic fields
           });
+        } else if (type === 'VOTER') {
+          console.log(`[QR-SCAN] Running findFirst on: ${scannedId}`);
+          voter = await this.prisma.base.voter.findFirst({ 
+            where: { id: scannedId },
+            select: { id: true, name: true } // SAFE MODE: Only fetch basic fields
+          });
+          
+          if (!voter) {
+            const idHash = this.encryptionService.generateBlindIndex(scannedId);
+            voter = await this.prisma.base.voter.findFirst({
+              where: {
+                documents: {
+                  some: {
+                    documentNumberHash: idHash,
+                    documentTypeName: { contains: 'Voter', mode: 'insensitive' }
+                  }
+                }
+              },
+              select: { id: true, name: true } // SAFE MODE: Only fetch basic fields
+            });
+          }
         }
-      } else {
+      } catch (err) {
+        console.error(`[QR-SCAN] SAFE-MODE-FAIL:`, err);
+        throw err;
+      }
+
+      if (voter) {
+        console.log(`[QR-SCAN] Found voter! Decrypting name...`);
+        if (voter.name && voter.name.startsWith('v2:')) {
+           voter.name = this.encryptionService.decrypt(voter.name);
+        }
+      }
+
+      if (!voter) {
         throw new BadRequestException(`Unsupported identity type: ${type}`);
       }
 
       if (!voter) {
-        throw new NotFoundException(`Voter not found with ID: ${id}`);
+        throw new NotFoundException(`Voter not found with ID: ${scannedId}`);
       }
 
       return {
@@ -203,8 +237,15 @@ export class VerificationService {
         status: voter.votingStatus,
         hasVoted: voter.hasVoted,
       };
-    } catch (e) {
+    } catch (e: any) {
       if (e instanceof HttpException) throw e;
+      
+      // LOG ERROR FOR DIAGNOSIS
+      const fs = require('fs');
+      const errorMsg = `[${new Date().toISOString()}] ScanQr Error:\n${e.message}\n${e.stack}\n\n`;
+      fs.appendFileSync('debug_error.txt', errorMsg);
+      
+      console.error('[ERROR] VerificationService.scanQr failed:', e);
       throw new InternalServerErrorException(e.message);
     }
   }

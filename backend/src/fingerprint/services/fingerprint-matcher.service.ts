@@ -22,11 +22,19 @@ export interface MatchResult {
   failureReason?: FailureReason;
 }
 
-// How many best-matching minutia pairs to count for the score
-const TOP_K_PAIRS = 12;
-// Max distance (px) and angle difference (rad) for a pair to be considered a match
-const MAX_DIST = 20;
-const MAX_ANGLE_DIFF = 0.35; // ~20 degrees
+// Local Structure Parameters
+const NEIGHBOR_COUNT = 3;      // Number of neighbors to form a local star/triplet
+const DIST_TOLERANCE = 8;      // Distance tolerance for local structures
+const ANGLE_TOLERANCE = 0.25;  // Angular tolerance for local structures
+
+interface LocalStructure {
+  center: Minutia;
+  neighbors: {
+    dist: number;      // Distance to neighbor
+    relAngle: number;  // Angle of neighbor relative to center's ridge angle
+    type: string;      // Neighbor type
+  }[];
+}
 
 @Injectable()
 export class FingerprintMatcherService {
@@ -37,64 +45,59 @@ export class FingerprintMatcherService {
     private readonly extractor: FingerprintExtractorService,
   ) {}
 
-  /**
-   * Match a probe template against all enrolled templates for a voter+finger.
-   * Uses spatial minutiae pair matching:
-   *   Score = number of corresponding minutiae pairs (similar position + angle)
-   *           normalized 0–100.
-   *
-   * Best score across all enrolled templates is used as the final result.
-   */
   async matchBest(
     probeBuffer: Buffer,
     enrolled: TemplateRecord[],
   ): Promise<MatchResult> {
     const threshold = parseFloat(
-      this.config.get<string>('FINGERPRINT_MATCH_THRESHOLD') ?? '40',
+      this.config.get<string>('FINGERPRINT_MATCH_THRESHOLD') ?? '30',
     );
 
     if (enrolled.length === 0) {
       return {
-        matched: false,
-        score: 0,
-        threshold,
-        matchedTemplateId: null,
+        matched: false, score: 0, threshold, matchedTemplateId: null,
         failureReason: FailureReason.NO_ENROLLED_TEMPLATES,
       };
     }
 
     const encKey = this.config.getOrThrow<string>('FINGERPRINT_ENCRYPTION_KEY');
-
-    // Deserialize probe
     const probe = this.extractor.deserialize(probeBuffer);
+    const probeStructures = this.buildLocalStructures(probe.minutiae);
 
     let bestScore = 0;
     let bestId: string | null = null;
+    let bestMatchCount = 0;
 
     for (const record of enrolled) {
       try {
         const plain = decryptTemplate(record.templateData, record.iv, encKey);
         const candidate = this.extractor.deserialize(plain);
+        const candidateStructures = this.buildLocalStructures(candidate.minutiae);
 
-        const score = this.spatialMinutiaeScore(probe, candidate);
+        // Perform Triplet-based matching
+        const { score, matches } = this.matchLocalStructures(probeStructures, candidateStructures);
 
         this.logger.debug(
-          `Template ${record.id}: score=${score.toFixed(1)} threshold=${threshold}`,
+          `Template Match - ID: ${record.id.substring(0, 8)} | Score: ${score.toFixed(1)} | Triplets: ${matches} | Threshold: ${threshold}`,
         );
 
         if (score > bestScore) {
           bestScore = score;
           bestId = record.id;
+          bestMatchCount = matches;
         }
       } catch (err: any) {
         this.logger.warn(`Skipping template ${record.id}: ${err?.message}`);
       }
     }
 
-    const matched = bestScore >= threshold;
+    // Since Triplets are much harder to match, we lower the count required to 4
+    const MIN_REQUIRED_TRIPLETS = 4;
+    const isSignificant = bestMatchCount >= MIN_REQUIRED_TRIPLETS;
+    const matched = isSignificant && bestScore >= threshold;
 
     this.logger.log(
-      `Match: ${matched ? 'MATCH ✓' : 'NO_MATCH ✗'} | score=${bestScore.toFixed(1)} | threshold=${threshold}`,
+      `Biometric Result: ${matched ? 'SUCCESS' : 'FAILURE'} | Best Score: ${bestScore.toFixed(1)} | Strong Matches: ${bestMatchCount} | Threshold: ${threshold}`,
     );
 
     return {
@@ -107,54 +110,115 @@ export class FingerprintMatcherService {
   }
 
   /**
-   * Spatial minutiae matching score (0–100).
-   *
-   * For each probe minutia, find the nearest candidate minutia within
-   * MAX_DIST pixels and MAX_ANGLE_DIFF radians. Count the matched pairs,
-   * take the top TOP_K_PAIRS and normalize to 100.
-   *
-   * This is a simplified (but effective) implementation of the MCC-like
-   * matching used by SourceAFIS conceptually.
+   * For every minutia, find its nearest neighbors to create a 'Local Star' descriptor.
    */
-  private spatialMinutiaeScore(
-    probe: FingerprintDescriptor,
-    candidate: FingerprintDescriptor,
-  ): number {
-    let matches = 0;
-    const usedCandidateIdxs = new Set<number>();
+  private buildLocalStructures(minutiae: Minutia[]): LocalStructure[] {
+    return minutiae.map(m1 => {
+      // Find nearest neighbors
+      const neighbors = minutiae
+        .filter(m2 => m1 !== m2)
+        .map(m2 => ({
+          dist: Math.hypot(m1.x - m2.x, m1.y - m2.y),
+          angle: Math.atan2(m2.y - m1.y, m2.x - m1.x),
+          type: m2.type,
+        }))
+        .sort((a, b) => a.dist - b.dist)
+        .slice(0, NEIGHBOR_COUNT)
+        .map(n => ({
+          dist: n.dist,
+          relAngle: this.angleDiff(n.angle, m1.angle),
+          type: n.type,
+        }));
 
-    for (const pm of probe.minutiae) {
-      let bestCIdx = -1;
-      let bestCDist = Infinity;
+      return { center: m1, neighbors };
+    });
+  }
 
-      for (let ci = 0; ci < candidate.minutiae.length; ci++) {
-        if (usedCandidateIdxs.has(ci)) continue;
-        const cm = candidate.minutiae[ci];
+  /**
+   * Compare neighborhoods and enforce a SINGLE global geometric transformation.
+   */
+  private matchLocalStructures(
+    probe: LocalStructure[],
+    candidate: LocalStructure[],
+  ): { score: number; matches: number } {
+    // Stage 1: Store potential matches and their required transformations
+    const potentialMatches: { dx: number; dy: number; dTheta: number; pIdx: number; cIdx: number }[] = [];
 
-        const dist = Math.hypot(pm.x - cm.x, pm.y - cm.y);
-        if (dist > MAX_DIST) continue;
+    for (let pi = 0; pi < probe.length; pi++) {
+      const p = probe[pi];
+      for (let ci = 0; ci < candidate.length; ci++) {
+        const c = candidate[ci];
 
-        const angleDiff = Math.abs(this.angleDiff(pm.angle, cm.angle));
-        if (angleDiff > MAX_ANGLE_DIFF) continue;
+        if (p.center.type !== c.center.type) continue;
 
-        if (dist < bestCDist) {
-          bestCDist = dist;
-          bestCIdx = ci;
+        let neighborMatches = 0;
+        const usedCNeighborIdxs = new Set<number>();
+        for (const pn of p.neighbors) {
+          for (let cni = 0; cni < c.neighbors.length; cni++) {
+            if (usedCNeighborIdxs.has(cni)) continue;
+            const cn = c.neighbors[cni];
+
+            if (pn.type !== cn.type) continue;
+            if (Math.abs(pn.dist - cn.dist) > DIST_TOLERANCE) continue;
+            if (Math.abs(this.angleDiff(pn.relAngle, cn.relAngle)) > ANGLE_TOLERANCE) continue;
+
+            neighborMatches++;
+            usedCNeighborIdxs.add(cni);
+            break;
+          }
         }
-      }
 
-      if (bestCIdx >= 0) {
-        matches++;
-        usedCandidateIdxs.add(bestCIdx);
-        if (matches >= TOP_K_PAIRS) break;
+        // Potential Match found!
+        if (neighborMatches >= 2) {
+          potentialMatches.push({
+            dx: c.center.x - p.center.x,
+            dy: c.center.y - p.center.y,
+            dTheta: this.angleDiff(c.center.angle, p.center.angle),
+            pIdx: pi,
+            cIdx: ci,
+          });
+        }
       }
     }
 
-    // Normalize: TOP_K_PAIRS matches → 100 score
-    return Math.min(100, (matches / TOP_K_PAIRS) * 100);
+    // Stage 2: Geometric Consensus (Binning)
+    // We look for a group of matches that share the same global (dx, dy, dTheta)
+    const binSizePos = 15; // px
+    const binSizeAngle = 0.5; // rad
+    
+    let bestConsensusCount = 0;
+    
+    // We try each potential match as a "consensing anchor"
+    for (const anchor of potentialMatches) {
+      let currentConsensus = 0;
+      const matchedP = new Set<number>();
+      const matchedC = new Set<number>();
+
+      for (const m of potentialMatches) {
+        if (matchedP.has(m.pIdx) || matchedC.has(m.cIdx)) continue;
+
+        const dxErr = Math.abs(m.dx - anchor.dx);
+        const dyErr = Math.abs(m.dy - anchor.dy);
+        const dThetaErr = Math.abs(this.angleDiff(m.dTheta, anchor.dTheta));
+
+        if (dxErr <= binSizePos && dyErr <= binSizePos && dThetaErr <= binSizeAngle) {
+          currentConsensus++;
+          matchedP.add(m.pIdx);
+          matchedC.add(m.cIdx);
+        }
+      }
+
+      if (currentConsensus > bestConsensusCount) {
+        bestConsensusCount = currentConsensus;
+      }
+    }
+
+    const minSetSize = Math.min(probe.length, candidate.length);
+    const score = minSetSize > 0 ? (bestConsensusCount / minSetSize) * 100 : 0;
+    return { score, matches: bestConsensusCount };
   }
 
-  /** Compute shortest angular difference in radians (signed, [-π, π]) */
+  /** Compute shortest angular difference [-π, π] */
   private angleDiff(a: number, b: number): number {
     let diff = a - b;
     while (diff > Math.PI) diff -= 2 * Math.PI;
@@ -162,3 +226,4 @@ export class FingerprintMatcherService {
     return diff;
   }
 }
+

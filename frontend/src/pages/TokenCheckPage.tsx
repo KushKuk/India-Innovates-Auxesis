@@ -16,8 +16,9 @@ import { LanguageSelection } from '@/components/LanguageSelection';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLanguageSelection } from '@/contexts/LanguageSelectionContext';
 import { useVoterDB, type VoterRecord } from '@/contexts/VoterContext';
-import { markVoterAsVotedInBackend } from '@/lib/api';
+import { markVoterAsVotedInBackend, approveVoting } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const ID_TYPE_KEYS = [
   { value: 'voter_id', labelKey: 'voterId' },
@@ -83,6 +84,15 @@ export default function TokenCheckPage() {
     }
   }, [searchId, selectedIdType, getActiveToken, voters, addAuditEntry]);
 
+  // NEW: Immediate selection from list
+  const handleSelectVoter = useCallback((v: VoterRecord) => {
+    setSearchId(v.voterId);
+    setSelectedIdType('voter_id');
+    setFoundVoter(v);
+    setSearchResult('found');
+    addAuditEntry({ terminal: 'tvo', action: 'Token selected from list', status: 'success', details: `Voter: ${v.voterId}`, voterId: v.voterId });
+  }, [addAuditEntry]);
+
   const handleApproveEntry = useCallback(() => {
     if (!foundVoter) return;
     updateVotingStatus(foundVoter.voterId, 'IN_PROGRESS');
@@ -123,15 +133,23 @@ export default function TokenCheckPage() {
     
     // PERSIST TO BACKEND
     try {
-      // Use the actual voterId (e.g. VOT001) which is the PK id in the backend
-      await markVoterAsVotedInBackend(foundVoter.voterId);
-    } catch (error) {
+      // Use the actual Token UUID (tokenId) for the final confirmation
+      if (foundVoter.tokenId) {
+        await approveVoting(foundVoter.tokenId);
+      } else if (foundVoter.id) {
+        // Fallback for manual or legacy records
+        await markVoterAsVotedInBackend(foundVoter.id);
+      } else {
+        await markVoterAsVotedInBackend(foundVoter.voterId);
+      }
+    } catch (error: any) {
       console.error('Failed to persist vote to backend:', error);
+      toast.error(error.message || 'Server error saving vote.');
     }
 
     updateVotingStatus(foundVoter.voterId, 'VOTED');
     setVoteConfirmed(true);
-    addAuditEntry({ terminal: 'tvo', action: 'Vote confirmed (EVM signal)', status: 'success', details: 'has_voted = VOTED', voterId: foundVoter.voterId });
+    addAuditEntry({ terminal: 'tvo', action: 'Vote confirmed (EVM signal)', status: 'success', details: `Status updated to VOTED for ${foundVoter.voterId}`, voterId: foundVoter.voterId });
 
     // Play beep
     try {
@@ -368,12 +386,15 @@ export default function TokenCheckPage() {
                         {voters.filter(v => v.votingStatus === 'TOKEN_ACTIVE').map(v => (
                           <button
                             key={v.id}
-                            onClick={() => { setSearchId(v.voterId); }}
-                            className="w-full flex items-center justify-between px-3 py-2 rounded-md bg-muted/50 hover:bg-muted text-sm transition-colors"
+                            onClick={() => handleSelectVoter(v)}
+                            className="w-full flex items-center justify-between px-3 py-2 rounded-md bg-muted/50 hover:bg-muted text-sm transition-colors border border-transparent hover:border-primary/20 shadow-sm"
                           >
-                            <span className="font-mono text-xs">{v.voterId}</span>
-                            <span className="font-mono text-xs text-primary">{v.token}</span>
-                            <span className="text-xs text-muted-foreground">{v.verificationMode === 'digital' ? '🖥️' : '📝'}</span>
+                            <div className="flex flex-col items-start">
+                               <span className="font-mono text-xs font-bold">{v.voterId}</span>
+                               <span className="text-[10px] text-muted-foreground truncate max-w-[100px]">{v.name}</span>
+                            </div>
+                            <span className="font-mono text-sm font-bold text-primary px-2 py-1 bg-primary/5 rounded">{v.token}</span>
+                            <span className="text-xs">{v.verificationMode === 'digital' ? '🖥️' : '📝'}</span>
                           </button>
                         ))}
                       </div>

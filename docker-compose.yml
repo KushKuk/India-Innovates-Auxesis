@@ -1,0 +1,17 @@
+services:
+  face-bridge:
+    build:
+      context: ./face-bridge
+      dockerfile: Dockerfile
+    container_name: face-bridge
+    ports:
+      - "8000:8000"
+    volumes:
+      # Map the backend's uploads folder so the container can access voter photos
+      - ./backend/uploads:/app/backend/uploads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

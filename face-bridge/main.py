@@ -86,8 +86,28 @@ async def verify_face(
     
     # 2. Fallback to reference image path if embedding not provided
     elif ref_image:
-        if not os.path.exists(ref_image):
-            return {"match": False, "confidence": 0, "reason": f"Reference image not found at {ref_image}"}
+        # Resolve relative paths coming from Docker-aware backend
+        # On Windows, paths might have backslashes; normalize them for Linux container
+        normalized_path = ref_image.replace('\\', '/')
+        
+        # If it doesn't start with /app, it's likely a relative path from the backend
+        # which we map to /app/backend/
+        if not normalized_path.startswith('/'):
+            # Check common mount points
+            candidate_paths = [
+                os.path.join("/app/backend", normalized_path),
+                os.path.join("/app", normalized_path),
+                normalized_path
+            ]
+            
+            ref_image = None
+            for p in candidate_paths:
+                if os.path.exists(p):
+                    ref_image = p
+                    break
+        
+        if not ref_image or not os.path.exists(ref_image):
+            return {"match": False, "confidence": 0, "reason": f"Reference image not found at {normalized_path}"}
         
         ref_img = cv2.imread(ref_image)
         ref_faces = face_app.get(ref_img)
@@ -128,7 +148,8 @@ async def health():
     return {
         "status": "online",
         "model": "arcface-buffalo-s",
-        "cpu_temp": temp
+        "cpu_temp": temp,
+        "environment": "docker"
     }
 
 if __name__ == "__main__":

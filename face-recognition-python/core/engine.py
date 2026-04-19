@@ -50,7 +50,7 @@ class FaceEngine:
         face_img = cv2.resize(face_img, (112, 112))
         face_img = cv2.cvtColor(face_img, cv2.COLOR_BGR2RGB)
         face_img = (face_img.astype(np.float32) - 127.5) / 128.0
-        face_img = face_img.transpose(2, 0, 1)
+        # face_img = face_img.transpose(2, 0, 1) # Removed: Model expects NHWC (1, 112, 112, 3), not NCHW
         return np.expand_dims(face_img, axis=0)
 
     def get_embedding(self, img_bytes):

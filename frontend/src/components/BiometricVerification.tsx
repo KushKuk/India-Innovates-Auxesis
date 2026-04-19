@@ -1,10 +1,10 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Fingerprint, ScanFace, AlertTriangle, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { faceMatch } from '@/lib/api';
+import { faceMatch, checkFingerprintStatus } from '@/lib/api';
 import { toast } from 'sonner';
 import { ScannedIDCard } from './ScannedIDCard';
 
@@ -108,12 +108,40 @@ export function BiometricVerification({ voterId, voterInfo, onSuccess, onFail, o
 
     if (currentPhase === 'fingerprint') {
       setFingerprintResult({ status: 'idle', completed: false });
-      // Simulate fingerprint scan
-      setTimeout(() => {
+      toast.info('Hardware scanner activated. Waiting for finger...');
+      
+      try {
+        const res = await fetch('http://localhost:8001/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ voterId, mode: 'verify' })
+        });
+        
+        const result = await res.json();
+        
+        if (result.matched || result.success) {
+          setScanning(false);
+          setFingerprintResult({ status: 'success', completed: true });
+          const score = result.score?.toFixed(1) || 'N/A';
+          toast.success(`Fingerprint matched! (Score: ${score})`);
+          setTimeout(() => setCurrentPhase('facial'), 1000);
+        } else {
+          setScanning(false);
+          setFingerprintResult({ status: 'fail', completed: false });
+          const newAttempts = fingerprintAttempts + 1;
+          setFingerprintAttempts(newAttempts);
+          if (newAttempts >= MAX_FINGERPRINT_ATTEMPTS) {
+            triggerLockout();
+          }
+          const score = result.score?.toFixed(1) || '0.0';
+          const reason = result.message || result.failureReason || result.error || 'Identity mismatch';
+          toast.error(`${reason} (Score: ${score})`);
+        }
+      } catch (err) {
         setScanning(false);
-        setFingerprintResult({ status: 'success', completed: true });
-        setTimeout(() => setCurrentPhase('facial'), 800);
-      }, 2000);
+        setFingerprintResult({ status: 'fail', completed: false });
+        toast.error('Could not connect to Fingerprint sensor. Is python as608_bridge.py running?');
+      }
     } else {
       setFacialResult({ status: 'idle', completed: false });
       
@@ -159,6 +187,8 @@ export function BiometricVerification({ voterId, voterInfo, onSuccess, onFail, o
       }
     }
   };
+
+  // Polling removed: UI now waits dynamically for the /scan endpoint response.
 
   const isAllBiometricsComplete = fingerprintResult.completed && facialResult.completed;
   const currentResult = currentPhase === 'fingerprint' ? fingerprintResult : facialResult;

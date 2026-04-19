@@ -23,6 +23,8 @@ export function VoterIdVerification({ voterId: expectedVoterId, onSuccess, onFai
   const [result, setResult] = useState<'idle' | 'success' | 'fail'>('idle');
   const videoRef = useRef<HTMLVideoElement>(null);
   const qrScannerRef = useRef<Html5Qrcode | null>(null);
+  const isProcessing = useRef(false);
+
 
 
   const handleScanVoterId = async () => {
@@ -38,8 +40,19 @@ export function VoterIdVerification({ voterId: expectedVoterId, onSuccess, onFai
 
         await scanner.start(
           { facingMode: 'environment' },
-          { fps: 10, qrbox: { width: 250, height: 250 } },
+          { 
+            fps: 30, 
+            qrbox: (viewfinderWidth, viewfinderHeight) => {
+              const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+              const qrboxSize = Math.floor(minEdgeSize * 0.85);
+              return { width: qrboxSize, height: qrboxSize };
+            },
+            aspectRatio: 1.0
+          },
           async (decodedText) => {
+            if (isProcessing.current) return;
+            isProcessing.current = true;
+
             console.log('Voter ID QR Decoded:', decodedText);
             
             try {
@@ -48,8 +61,10 @@ export function VoterIdVerification({ voterId: expectedVoterId, onSuccess, onFai
               
               // Verify if the scanned ID belongs to the voter we are currently processing
               if (detectedVoter.id === expectedVoterId) {
-                await scanner.stop();
-                qrScannerRef.current = null;
+                if (qrScannerRef.current) {
+                  await qrScannerRef.current.stop();
+                  qrScannerRef.current = null;
+                }
                 
                 setVoterId(detectedVoter.id);
                 setIsScanned(true);
@@ -57,9 +72,13 @@ export function VoterIdVerification({ voterId: expectedVoterId, onSuccess, onFai
                 toast.success('Voter ID Matched Successfully');
               } else {
                 toast.error(`Mismatch! This card belongs to ${detectedVoter.name}, not the current voter.`);
+                // Reset lock so they can try again with the correct card
+                isProcessing.current = false;
               }
             } catch (err: any) {
               console.error('Voter ID scan failed:', err);
+              // Reset lock on error
+              isProcessing.current = false;
               toast.error(err.message || 'Invalid Voter ID card');
             }
           },
@@ -116,7 +135,7 @@ export function VoterIdVerification({ voterId: expectedVoterId, onSuccess, onFai
                    <div className="scan-line absolute inset-x-0 h-1 bg-primary/60 z-10" />
                    
                    {/* Center Target */}
-                   <div className="w-64 h-64 border-2 border-primary/50 rounded-lg flex items-center justify-center">
+                   <div className="w-80 h-80 border-2 border-primary/50 rounded-lg flex items-center justify-center">
                      <div className="text-center">
                        <Scan className="w-8 h-8 text-primary/70 mx-auto mb-2 animate-pulse" />
                        <p className="text-primary/70 text-xs font-semibold">Align Voter ID QR Here</p>
