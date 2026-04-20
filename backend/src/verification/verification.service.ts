@@ -176,7 +176,7 @@ export class VerificationService {
           const searchDocType = type === 'AADHAR' ? 'Aadh' : 'PAN';
           console.log(`[QR-SCAN] Searching for hash: ${idHash}`);
 
-          voter = await this.prisma.base.voter.findFirst({
+          voter = await this.prisma.client.voter.findFirst({
             where: {
               documents: {
                 some: {
@@ -184,19 +184,17 @@ export class VerificationService {
                   documentTypeName: { contains: searchDocType, mode: 'insensitive' }
                 }
               }
-            },
-            select: { id: true, name: true } // SAFE MODE: Only fetch basic fields
+            }
           });
         } else if (type === 'VOTER') {
           console.log(`[QR-SCAN] Running findFirst on: ${scannedId}`);
-          voter = await this.prisma.base.voter.findFirst({ 
-            where: { id: scannedId },
-            select: { id: true, name: true } // SAFE MODE: Only fetch basic fields
+          voter = await this.prisma.client.voter.findFirst({ 
+            where: { id: scannedId }
           });
           
           if (!voter) {
             const idHash = this.encryptionService.generateBlindIndex(scannedId);
-            voter = await this.prisma.base.voter.findFirst({
+            voter = await this.prisma.client.voter.findFirst({
               where: {
                 documents: {
                   some: {
@@ -204,8 +202,7 @@ export class VerificationService {
                     documentTypeName: { contains: 'Voter', mode: 'insensitive' }
                   }
                 }
-              },
-              select: { id: true, name: true } // SAFE MODE: Only fetch basic fields
+              }
             });
           }
         }
@@ -215,28 +212,45 @@ export class VerificationService {
       }
 
       if (voter) {
-        console.log(`[QR-SCAN] Found voter! Decrypting name...`);
-        if (voter.name && voter.name.startsWith('v2:')) {
-           voter.name = this.encryptionService.decrypt(voter.name);
+        console.log(`[QR-SCAN] Identified via document: ${voter.id}. Fetching source of truth...`);
+        
+        // SOURCE OF TRUTH RE-FETCH
+        const voterSourceOfTruth = await this.prisma.client.voter.findUnique({
+          where: { id: voter.id }
+        });
+
+        if (voterSourceOfTruth) {
+           console.log(`[QR-SCAN] CRITICAL: voter record: ${JSON.stringify({
+             id: voterSourceOfTruth.id,
+             hasVoted: voterSourceOfTruth.hasVoted,
+             votingStatus: voterSourceOfTruth.votingStatus
+           })}`);
+           
+           // Decrect name if needed
+           if (voterSourceOfTruth.name && voterSourceOfTruth.name.startsWith('v2:')) {
+             voterSourceOfTruth.name = this.encryptionService.decrypt(voterSourceOfTruth.name);
+           }
+           voter = voterSourceOfTruth;
+        } else {
+          console.error(`[QR-SCAN] ERROR: Voter identified but record not found in Voter table for ID: ${voter.id}`);
         }
       }
 
       if (!voter) {
-        throw new BadRequestException(`Unsupported identity type: ${type}`);
+        throw new BadRequestException(`Unsupported identity type or record not found: ${type}`);
       }
 
-      if (!voter) {
-        throw new NotFoundException(`Voter not found with ID: ${scannedId}`);
-      }
-
-      return {
+      const responseBody = {
         id: voter.id,
         name: voter.name,
-        photoUrl: voter.photoUrl,
+        photoUrl: voter.photoUrl || null,
         documentType: type,
-        status: voter.votingStatus,
-        hasVoted: voter.hasVoted,
+        status: voter.votingStatus || 'PENDING',
+        hasVoted: voter.hasVoted === true || voter.hasVoted === 1 || voter.votingStatus === 'VOTED'
       };
+
+      console.log(`[QR-SCAN] FINAL RESPONSE BODY: ${JSON.stringify(responseBody)}`);
+      return responseBody;
     } catch (e: any) {
       if (e instanceof HttpException) throw e;
       

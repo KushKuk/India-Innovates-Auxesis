@@ -16,8 +16,10 @@ async function bootstrap() {
   app.use(json({ limit: '10mb' }));
   app.use(urlencoded({ extended: true, limit: '10mb' }));
 
-  // Static files for uploads
-  app.useStaticAssets(join(__dirname, '..', '..', 'uploads'), {
+  // Static files for uploads - using process.cwd() for robustness
+  const uploadsPath = join(process.cwd(), 'uploads');
+  console.log(`📂 Serving static assets from: ${uploadsPath}`);
+  app.useStaticAssets(uploadsPath, {
     prefix: '/uploads',
   });
 

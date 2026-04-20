@@ -13,6 +13,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useLanguageSelection } from '@/contexts/LanguageSelectionContext';
 import { useVoterDB } from '@/contexts/VoterContext';
 import { updateVoterStatusInBackend, digitalVerify } from '@/lib/api';
+import { toast } from 'sonner';
 import type { StageStatus } from '@/types/verification';
 
 export default function DigitalVerifyPage() {
@@ -30,18 +31,47 @@ export default function DigitalVerifyPage() {
 
   const terminalAudit = auditLog.filter(e => e.terminal === 'digital');
 
+  const handleReset = useCallback(() => {
+    setCurrentStage(0);
+    setStages({ identity: 'active', biometric: 'pending' });
+    setTokenGenerated(false);
+    setGeneratedToken('');
+    setCurrentVoterId('');
+    setScannedVoter(null);
+    setLanguageSelected(false);
+    addAuditEntry({ terminal: 'digital', action: 'Session reset', status: 'info' });
+  }, [setLanguageSelected, addAuditEntry]);
+
   const updateStage = useCallback((stage: string, status: StageStatus) => {
     setStages(prev => ({ ...prev, [stage]: status }));
   }, []);
 
   const handleIdSuccess = useCallback((voterId: string, voterInfo?: any) => {
+    // Redundant safeguard: Block if voter has already voted
+    console.log('🧐 Safeguard Check:', { voterId, hasVoted: voterInfo?.hasVoted, status: voterInfo?.status });
+    
+    const alreadyVoted = voterInfo?.hasVoted === true || 
+                        voterInfo?.hasVoted === 1 || 
+                        voterInfo?.hasVoted === 'true' ||
+                        voterInfo?.status === 'VOTED';
+
+    if (alreadyVoted) {
+      console.warn('⚠️ Security Alert: Already voted voter detected at Digital Terminal stage 1 fallback:', voterId);
+      toast.error('Identity Fraud Prevention: This voter has already cast their vote.', {
+        duration: 7000,
+        style: { backgroundColor: '#fee2e2', color: '#991b1b', border: '1px solid #f87171' }
+      });
+      handleReset();
+      return;
+    }
+
     updateStage('identity', 'success');
     updateStage('biometric', 'active');
     setCurrentStage(1);
     setCurrentVoterId(voterId);
     setScannedVoter(voterInfo || null);
     addAuditEntry({ terminal: 'digital', action: 'ID verified', status: 'success', details: `Identity confirmed (Voter: ${voterId})` });
-  }, [updateStage, addAuditEntry]);
+  }, [updateStage, addAuditEntry, handleReset]);
 
   const handleIdFail = useCallback(() => {
     updateStage('identity', 'failed');
@@ -104,16 +134,7 @@ export default function DigitalVerifyPage() {
     addAuditEntry({ terminal: 'digital', action: 'Biometric verification failed', status: 'error' });
   }, [updateStage, addAuditEntry]);
 
-  const handleReset = useCallback(() => {
-    setCurrentStage(0);
-    setStages({ identity: 'active', biometric: 'pending' });
-    setTokenGenerated(false);
-    setGeneratedToken('');
-    setCurrentVoterId('');
-    setScannedVoter(null);
-    setLanguageSelected(false);
-    addAuditEntry({ terminal: 'digital', action: 'Session reset', status: 'info' });
-  }, [setLanguageSelected, addAuditEntry]);
+
 
   const toggleDark = () => { setDarkMode(d => !d); document.documentElement.classList.toggle('dark'); };
   const toggleOnline = () => setIsOnline(o => !o);

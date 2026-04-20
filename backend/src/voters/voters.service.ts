@@ -12,13 +12,8 @@ export class VotersService {
   async search(name: string, dobOrAge?: string, useAge?: boolean) {
     if (!name) return [];
     
-    // Use the Blind Index for exact match search on encrypted data
-    const nameHash = this.encryptionService.generateBlindIndex(name);
-
-    const voters = await this.prisma.client.voter.findMany({
-      where: {
-        nameHash: nameHash,
-      },
+    // FETCH ALL VOTERS: The extended client will automatically decrypt their names
+    const allVoters = await this.prisma.client.voter.findMany({
       include: {
         documents: {
           include: {
@@ -26,6 +21,18 @@ export class VotersService {
           }
         }
       }
+    });
+
+    const searchStr = name.trim().toLowerCase();
+    
+    // PERFORM PARTIAL MATCH IN MEMORY
+    // Since names are now decrypted, we can use standard JS string methods
+    let voters = allVoters.filter(v => 
+      v.name && v.name.toLowerCase().includes(searchStr)
+    );
+
+    voters.forEach(v => {
+      console.log(`[SEARCH-DIAG] Voter ${v.id} (${v.name}): photoUrl="${v.photoUrl}"`);
     });
 
     if (voters.length === 0) return [];

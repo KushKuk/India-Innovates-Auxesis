@@ -1,33 +1,29 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-async function main() {
-  console.log('🔄 Starting full database reset for demo...');
-
+async function resetVoters() {
+  console.log('🔄 Starting reset of all voters...');
+  
   try {
-    // 1. Clear Tokens (active sessions)
-    const tokenDelete = await prisma.token.deleteMany({});
-    console.log(`✅ Deleted ${tokenDelete.count} active tokens.`);
-
-    // 2. Clear Audit Logs (recent activity)
-    const auditDelete = await prisma.auditLog.deleteMany({});
-    console.log(`✅ Deleted ${auditDelete.count} audit log entries.`);
-
-    // 3. Reset Voters (voting status)
-    const voterUpdate = await prisma.voter.updateMany({
+    // Reset all voters to PENDING status and hasVoted to false
+    const result = await prisma.voter.updateMany({
       data: {
         hasVoted: false,
         votingStatus: 'PENDING'
       }
     });
-    console.log(`✅ Reset ${voterUpdate.count} voters to 'PENDING/Not Voted'.`);
 
-    console.log('\n✨ Database is now fresh and ready for the demo!');
+    // Also delete all active tokens to clear the terminal states
+    const tokenResult = await prisma.token.deleteMany({});
+
+    console.log(`✅ Success! Reset ${result.count} voters.`);
+    console.log(`✅ Cleared ${tokenResult.count} previous voting tokens.`);
+    console.log('\nYou can now test the verification flow from scratch.');
   } catch (error) {
-    console.error('❌ Error resetting database:', error);
+    console.error('❌ Error resetting voters:', error);
   } finally {
     await prisma.$disconnect();
   }
 }
 
-main();
+resetVoters();

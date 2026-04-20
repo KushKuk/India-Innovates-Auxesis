@@ -16,7 +16,7 @@ import { LanguageSelection } from '@/components/LanguageSelection';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useLanguageSelection } from '@/contexts/LanguageSelectionContext';
 import { useVoterDB, type VoterRecord } from '@/contexts/VoterContext';
-import { markVoterAsVotedInBackend, approveVoting } from '@/lib/api';
+import { markVoterAsVotedInBackend, approveVoting, verifyToken } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -93,8 +93,23 @@ export default function TokenCheckPage() {
     addAuditEntry({ terminal: 'tvo', action: 'Token selected from list', status: 'success', details: `Voter: ${v.voterId}`, voterId: v.voterId });
   }, [addAuditEntry]);
 
-  const handleApproveEntry = useCallback(() => {
+  const handleApproveEntry = useCallback(async () => {
     if (!foundVoter) return;
+    
+    // SYNC TO BACKEND
+    if (foundVoter.tokenId) {
+      const loadingToast = toast.loading('Synchronizing with backend...');
+      try {
+        await verifyToken(foundVoter.tokenId);
+        toast.success('Voter verified in backend', { id: loadingToast });
+      } catch (error: any) {
+        console.error('Failed to verify token in backend:', error);
+        toast.error(error.message || 'Backend synchronization failed', { id: loadingToast });
+        // Don't proceed if backend sync fails (preventing inconsistent state)
+        return;
+      }
+    }
+
     updateVotingStatus(foundVoter.voterId, 'IN_PROGRESS');
     setVotingInProgress(true);
     setIsExpired(false);

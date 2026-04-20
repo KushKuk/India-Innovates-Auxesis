@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { CreditCard, ChevronDown, FileText, TriangleAlert as AlertTriangle, Scan, Camera } from 'lucide-react';
+import { CreditCard, ChevronDown, FileText, TriangleAlert as AlertTriangle, Scan, Camera, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -45,7 +45,7 @@ export function AadhaarVerification({ onSuccess, onFail, onSwitchManual }: Props
 
   const [scannedVoter, setScannedVoter] = useState<{ id: string, name: string, documentType: string, documentNumber: string } | null>(null);
   const [scanning, setScanning] = useState(false);
-  const [result, setResult] = useState<'idle' | 'success' | 'fail'>('idle');
+  const [result, setResult] = useState<'idle' | 'scanning' | 'success' | 'fail' | 'blocked'>('idle');
   const [failAttempts, setFailAttempts] = useState(0);
   const [locked, setLocked] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -105,16 +105,29 @@ export function AadhaarVerification({ onSuccess, onFail, onSwitchManual }: Props
               const voter = await scanQr(decodedText);
               
               // BLOCK if already voted
-              if (voter.hasVoted) {
+              console.log('📡 Scan Response Data:', voter);
+              
+              const alreadyVoted = voter.hasVoted === true || 
+                                  voter.status === 'VOTED';
+
+              if (alreadyVoted) {
+                console.error('🚫 Blocked: Voter has already voted.', voter.id);
                 if (qrScannerRef.current) {
                   await qrScannerRef.current.stop();
                   qrScannerRef.current = null;
                 }
                 setScanning(false);
+                setScannedVoter({
+                  id: voter.id,
+                  name: voter.name,
+                  documentType: (voter as any).documentType || 'ID',
+                  documentNumber: (voter as any).documentNumber || voter.id
+                });
+                setResult('blocked');
                 playAlarmBeep();
-                toast.error('Identity Fraud Prevention: This voter has already cast their vote.', {
-                  duration: 5000,
-                  style: { backgroundColor: '#fee2e2', color: '#991b1b', border: '1px solid #f87171' }
+                toast.error('Identity Fraud Prevention: Duplicate Vote Attempt Detected', {
+                  duration: 10000,
+                  style: { backgroundColor: '#fee2e2', color: '#991b1b', border: '2px solid #ef4444' }
                 });
                 onFail();
                 return;
@@ -125,6 +138,8 @@ export function AadhaarVerification({ onSuccess, onFail, onSwitchManual }: Props
                 await qrScannerRef.current.stop();
                 qrScannerRef.current = null;
               }
+              
+              console.log('✅ Voter identified:', voter.name, 'hasVoted:', voter.hasVoted);
               
               setScannedVoter({
                 id: voter.id,
@@ -140,7 +155,9 @@ export function AadhaarVerification({ onSuccess, onFail, onSwitchManual }: Props
                 id: voter.id,
                 name: voter.name,
                 documentType: (voter as any).documentType || 'ID',
-                documentNumber: (voter as any).documentNumber || voter.id
+                documentNumber: (voter as any).documentNumber || voter.id,
+                hasVoted: voter.hasVoted,
+                status: voter.status
               }), 2000);
             } catch (err: any) {
               console.error('Scan verification failed:', err);
@@ -250,6 +267,31 @@ export function AadhaarVerification({ onSuccess, onFail, onSwitchManual }: Props
              </div>
           </div>
         )}
+
+        {/* Blocked */}
+        {result === 'blocked' && (
+        <div className="text-center py-12 animate-in fade-in zoom-in duration-300">
+          <div className="w-24 h-24 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-6 border-4 border-destructive/20">
+            <span className="text-5xl">🚫</span>
+          </div>
+          <h2 className="text-3xl font-black text-destructive mb-3 uppercase tracking-tighter">Duplicate Vote Attempt</h2>
+          <div className="bg-destructive/5 border-2 border-destructive/20 rounded-2xl p-6 max-w-md mx-auto mb-8">
+            <p className="text-lg font-semibold text-foreground mb-2">Voter Identity: <span className="font-mono">{scannedVoter?.name || 'Identified Voter'}</span></p>
+            <p className="text-sm text-destructive font-medium uppercase">Security Protocol Triggered: This individual has already cast their ballot and is legally barred from further voting in this session.</p>
+          </div>
+          <Button 
+            variant="destructive" 
+            size="lg"
+            onClick={() => {
+              setResult('idle');
+              setScannedVoter(null);
+            }} 
+            className="gap-2 px-8 py-6 text-xl shadow-xl hover:scale-105 transition-transform"
+          >
+            <RotateCcw className="w-6 h-6" /> Reset Terminal
+          </Button>
+        </div>
+      )}
 
         {/* Success */}
         {result === 'success' && scannedVoter && (

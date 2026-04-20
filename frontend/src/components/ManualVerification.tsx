@@ -86,6 +86,7 @@ export function ManualVerification({ onComplete, onCancel, onAudit }: Props) {
 
   // Step 3: Photo Matching
   const [photoMatched, setPhotoMatched] = useState(false);
+  const [photoMismatch, setPhotoMismatch] = useState(false);
 
   // Step 4: ID Verification
   const [idType, setIdType] = useState('');
@@ -172,8 +173,21 @@ export function ManualVerification({ onComplete, onCancel, onAudit }: Props) {
   const handlePhotoMatch = (checked: boolean) => {
     setPhotoMatched(checked);
     if (checked) {
+      setPhotoMismatch(false);
       audit('Photo match confirmed', 'success');
     }
+  };
+
+  const handlePhotoMismatch = (checked: boolean) => {
+    setPhotoMismatch(checked);
+    if (checked) {
+      setPhotoMatched(false);
+    }
+  };
+
+  const handleDenyVerification = () => {
+    audit('Manual verification denied - Photo mismatch', 'error', selectedVoter?.id);
+    setCurrentStep(-1);
   };
 
   const handleIdVerified = (checked: boolean) => {
@@ -256,6 +270,7 @@ export function ManualVerification({ onComplete, onCancel, onAudit }: Props) {
       // Add to global VoterContext for Token Verification screen
       addVoter({
         id: selectedVoter.id,
+        tokenId: response.id,
         voterId: selectedVoter.voterId || selectedVoter.id,
         name: selectedVoter.name,
         idType: idType || 'manual',
@@ -294,6 +309,38 @@ export function ManualVerification({ onComplete, onCancel, onAudit }: Props) {
   };
 
   // ===== RENDER STEPS =====
+
+  // Step -1: Verification Terminated
+  if (currentStep === -1) {
+    return (
+      <Card className="fade-in border-destructive/30 shadow-lg">
+        <CardContent className="pt-8 pb-8">
+          <div className="text-center space-y-4">
+            <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-2 border-4 border-destructive/20">
+              <AlertCircle className="w-10 h-10 text-destructive" />
+            </div>
+            <h2 className="text-2xl font-bold text-destructive">Verification Terminated</h2>
+            <div className="p-4 bg-muted rounded-lg max-w-sm mx-auto">
+              <p className="font-medium">Identity Mismatch</p>
+              <p className="text-sm text-muted-foreground mt-1">Verification has been denied because the photo on record does not match the person.</p>
+            </div>
+            <Button 
+              onClick={() => {
+                setCurrentStep(1);
+                setSearchName('');
+                setSearchDob('');
+                setSearchResults([]);
+              }} 
+              variant="default"
+              className="mt-4"
+            >
+              Start Over
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   // Step 1: Voter Search
   if (currentStep === 1) {
@@ -465,20 +512,41 @@ export function ManualVerification({ onComplete, onCancel, onAudit }: Props) {
                 Photo matches the person
               </label>
             </div>
+            
+            <div className="flex items-center gap-3 mt-2">
+              <Checkbox
+                id="photoMismatch"
+                checked={photoMismatch}
+                onCheckedChange={handlePhotoMismatch}
+              />
+              <label htmlFor="photoMismatch" className="text-sm cursor-pointer text-destructive">
+                Photo DOES NOT match the person
+              </label>
+            </div>
           </div>
 
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleGoBack} className="flex-1">
               Back
             </Button>
-            <Button
-              variant="default"
-              onClick={handleNextStep}
-              disabled={!photoMatched}
-              className="flex-1"
-            >
-              Next
-            </Button>
+            {photoMismatch ? (
+              <Button
+                variant="destructive"
+                onClick={handleDenyVerification}
+                className="flex-1"
+              >
+                Deny Verification
+              </Button>
+            ) : (
+              <Button
+                variant="default"
+                onClick={handleNextStep}
+                disabled={!photoMatched}
+                className="flex-1"
+              >
+                Next
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
